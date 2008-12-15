@@ -1,0 +1,68 @@
+Alchemy/WebMail version 0.44
+============================
+
+ Alchemy WebMail is a Web based mod_perl e-mail client. It relies on
+ a database for storing user application data and an IMAP server for
+ managing the user's e-mail. 
+
+ Alchemy Webmail should work with any database for which a DBI layer
+ exists, the prefered database is PostgreSQL. 
+
+INSTALLATION
+
+ Ensure that you have Apache 1.x and mod_perl 1.x, this module will not
+ currently work with the 2.x series of Apache or mod_perl.
+
+ To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+ Database Configuration:
+
+   Load the appropriate schema file into your database according to your
+   particular database's methods.  Note that the schema files contain
+   only the table and sequence shema, they do not contain any
+   authorization information for the database. It is up to the installer
+   to set these to their preference.
+
+ Apache Configuration:
+
+   Configure your apache installation for mod_perl and Alchemy WebMail,
+   see the Webmail.conf for an example configuration.  
+   
+   "perldoc Alchemy::Webmail" details all of the configuration options.
+
+   Copy or create templates for your installation of WebMail. The
+   default templates are located in the templates directory of the
+   source distribution.
+
+   After these steps have been completed you have a dandy web based
+   e-mail application running that your users should like, if they know
+   what's good for them. ;)
+
+DEPENDENCIES
+
+ This module requires these other modules and libraries:
+
+	mod_perl 1.x 
+
+	Magic
+	Crypt::CBC
+		Crypt::Blowfish or another cipher that works with Crypt::CBC
+	Mail::Cclient
+	MIME::Entity
+	MIME::Parser
+
+LAST UPDATED
+ $Date: 2003/10/01 02:54:34 $
+
+COPYRIGHT AND LICENCE
+
+ Copyright (c) 2003 Nicholas Studt. All rights reserved.
+
+ You may distribute under the terms of either the GNU General Public
+ License or the Artistic License, as specified in the Perl README file.
+

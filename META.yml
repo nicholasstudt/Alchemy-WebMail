@@ -1,0 +1,17 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Alchemy-WebMail
+version:      0.75
+version_from: lib/Alchemy/WebMail.pm
+installdirs:  site
+requires:
+    Apache2::Request:              0
+    Crypt::CBC:                    0
+    Date::Manip:                   0
+    KrKit:                         0.14
+    Mail::Cclient:                 1.8
+    MIME::Entity:                  0
+    MIME::Parser:                  0
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17

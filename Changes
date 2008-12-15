@@ -1,0 +1,503 @@
+Revision history for Perl extension Alchemy::WebMail.
+
+-[ Todo ]--------------------------------------------------------------
+
+	- Fix the Folder creation to no allow leading/trailing spaces, or
+	  make it so the system can use folders like that.
+
+	- Fix the address book to work in both a popup and in the full
+	  screen. Both should have the same features, but one should just
+	  have a different template.
+		- Groups, move rename into edit.
+
+	- Add an icon for attachments in the folder listing, how do I tell ?
+
+	- * Add help to the application. *
+	- Make the default templates prettier.
+	- Document install some more.
+	- Exploit the Cyrus/SASL to do real folders.
+	- Build the default SQL creation scripts for Mysql and Oracle.
+
+-[ Revision History ]--------------------------------------------------
+
+0.77
+	- Last working in AddressBook.
+
+0.76 Wed Jun  4 20:48:54 CDT 2008
+	- Modified encoding to not quote the default message if it is
+	  html... This probably needs some more thought.
+	- Moved from using multiple to single inheritance.	
+	- Roles now save and recover from draft correctly.
+
+0.75 Thu Apr  5 13:55:15 CDT 2007
+	- Sunflower patch, fixed dropping plain text attachments in
+	  multipart messages.
+	- Sunflower patch, sort order on attachments. ( Now list in order it
+	  is in the email )
+	- Sunflower patch, ISO handling in subject, from line, email.
+
+0.74 Fri Sep  2 09:00:50 CDT 2005
+	- Moved Webmail.conf to httpd.conf.
+	- Updating to the Apache2::* naming convention for mod_perl 2.000001
+
+0.73 Thu Dec 30 20:49:14 CST 2004
+	- Fixed the body_fh problem. Requires KrKit 0.14
+
+0.72 Thu Dec 30 10:24:56 CST 2004
+	- Fixed reply to in the sentmail folder.
+	- Adjusted addsig to add the signature where the cursor is at in the
+	  message, or if not in the message textarea then add to the end.
+	  The method comes from http://www.alexking.org/blog/2003/06/02/
+	- Added the ability to add a address from the popup addressbook page.
+	- Dates in the listing now are formatable via DateTime_Format.
+	
+0.71 Mon Dec 27 11:48:10 CST 2004
+	- Fixing the authentication handler to not popup.
+
+0.70 Sun Dec 26 18:04:25 CST 2004
+	- porting to mod_perl 2
+
+0.63 Thu Oct  7 08:13:34 CDT 2004
+	- Change counting to require a flag if we want to keep it.
+
+0.63 Fri Aug 20 20:54:58 CDT 2004
+	- Fixing the folder sort order problem?
+
+0.62 Sat Jul 31 21:26:12 CDT 2004
+	- Moved to using ht_checkbox.
+	- Added the where clause to sql_update
+
+0.61 Thu Jul 22 21:39:25 CDT 2004
+	- Spelling error fix in the address book addition errors.
+
+0.60 Thu Jun 24 22:41:58 CDT 2004
+	- Made the email in the address book compose.
+
+0.59 Thu Jun 24 08:45:43 CDT 2004
+	- Changed the address book to not allow duplicate e-mails in one
+	  persons address book.
+	- Changed the auto add to always show the user the form to confirm
+	  the information.
+
+0.58 Wed Jun 23 21:57:45 CDT 2004
+	- Finished the Groups admin.
+	- Added the groups the the address book popup.
+	- Added ability to grab the address from an email and put it in the
+	  address book.
+
+0.57 Tue Jun 22 21:54:53 CDT 2004
+	- Fixed the title in the main message view.
+	- Groups work. All implemented in the group admin save membership
+	  addition and removal. All old group code has been removed with
+	  prejudice, it was *bad*.
+
+0.56 Mon Jun 21 21:34:51 CDT 2004
+	- Added the ability to mask the INBOX as something else. This is an
+	  option and need not be used if the system setting of INBOX is
+	  useable. The option changes the displayed value only, not the
+	  value used for links or folder operations.
+
+0.55 Sun Jun 20 21:24:56 CDT 2004
+	- Fixed a uninitialized value warning in Preferences::Roles.
+	- Fixed login case sensitivity, now all usernames are lower cased.
+	- Fixed the reply quoting.
+	- Put in a temporary Inbox fix.
+	- Changed the unknown.html -> 'View HTML Version of Message'
+	- Do not display the .plain type. 
+	- Fixed the folder sort to percolate Inbox to the top.
+	- Fix the draft folder issue in do_response no need to send the
+	  folder twice.
+
+0.54b Wed Mar 31 21:44:37 CST 2004
+	- Debugging release for the recent IMAP folder creation problem.
+
+0.53 Fri Feb 13 21:44:33 CST 2004
+	- Added a ht_qt around the subject.
+	- Updated to the new CPAN module layout.
+
+0.52 Fri Dec 26 16:30:59 CST 2003
+	- Display of folder counts in the folder list.
+	- Working on the groups form, to create a new group or edit an
+	  existing group.
+	- Completed group addition. Needs edit, delete, and view.
+
+0.51 Mon Nov 24 21:44:43 CST 2003
+	- Added another test for a blank subject in the folder view. 
+	- Added defaults to the message view.
+	- Added defaults to the responce function. 
+	- Adjusted the main folder view to show the To address for the
+	  sentmail folder. This only works for the "main" sentmail folder.
+
+0.50 Sun Nov 16 15:59:08 CST 2003
+	- Adjusted the mail parser to deal with nested multipart messages.
+	- Adjusted the link highlighter to catch a couple more types of links.
+	- Added the ability to copy a message to another folder.
+
+0.49 Tue Oct 21 21:51:52 CDT 2003
+	- Working on the groups stuff.
+	- Fixed a bug in the From address display.
+	- Partially fixed the "To" field in drafts.
+	- Fixed a bug in the reply to code.
+
+0.48 Sat Oct 11 18:56:29 CDT 2003
+	- Fixed the SMTP sending of messages in order to ensure that the
+	  message does, in fact, get sent.
+	- Fixed the login redirect, forgot to send people to the proper
+	  location if they were trying to go someplace else.
+
+0.47 Tue Sep 30 21:54:12 CDT 2003
+	- Removed alignments from the code, just gave the items different
+	  classes to allow it to be completely configurable.
+	- Added classing to the empty trash page.
+	- Adjusted the config file to not use a webmail directory. 
+
+0.46 Thu Sep 25 22:57:42 CDT 2003
+	- Fixed the e-mail address parsing in the main mail listing.
+	- Put a subject length limit into the main mail listing. (WM_Subject_Max)
+
+0.45 Wed Sep 24 21:47:01 CDT 2003
+	- Fixed the e-mail regex in IMAP to be a little better.
+
+0.44 Mon Sep 22 14:10:22 CDT 2003
+	- Working on the IMAP module's documentation. 
+	- Finished Documenting Webmail.pm. 
+	- Worked out the README.
+	- Put stubs in for the Oracle and Mysql schema files.
+	- Working on the template some. Have the top nav worked out. Haven't
+	  got a nice side menu yet.
+	- Fixed a log in bug.
+
+0.43 Sun Aug 31 22:56:03 CDT 2003
+	- Cleaned up and normalized the function names in the IMAP module.
+	- Worked on the README a little.
+	- Fixed the message_send routine to verify if the message was sent
+	  or not and return success or failure.
+	- Adjusted IMAP->new to check it's input.
+	- Fixed message_sort to return a blank array if there are no
+	  messages. Adjusted all reads to fail if they get this case.
+
+0.42 Fri Aug 29 23:38:29 CDT 2003
+	- Fixed the validation for the date field.
+	- Fixed a bug in the signature code where multiline sigs break.
+	- Adjusted the folder listing on the sidebar to lie about inbox
+	  existing, this isn't the best thing but if IMAP can't create or
+	  subscribe to the inbox what is a programmer to do ?
+
+0.41 Mon Aug 25 22:26:16 CDT 2003
+	- Fixed the signatures again. They are now in there *final* form,
+	  hopefully.
+	- Fixed the case where the email is just "<address>"
+
+0.40 Sun Aug 24 22:26:04 CDT 2003
+	- Fixed the signatures again. There is not a select on applying the
+	  signature or not.
+
+0.39 Sat Aug 23 22:52:37 CDT 2003
+	- The default signature is now set on all message composition cases
+	  where it needs to be set.	
+	- Trying to work out a nice way to swap the siguatures that are in
+	  the message area. Not having much luck with that.
+
+0.38 Mon Aug 18 22:57:04 CDT 2003
+	- Fixed the reply email address problem. 
+	- Made the to, cc, and bcc understand ';' as a valid seperator.
+	- The to, cc, and bcc should now understand just about any type of
+	  email address format that you could throw at it.
+	- Fixed the compose from drafts folder problem. Also fixed the send
+	  email to the to field from the drafts folder as well.
+
+0.37 Sun Aug 17 22:28:23 CDT 2003
+	- Added the icons to the distribution.
+	- Added the check to disallow empty files.
+	- Added a message count to the folder message listing.
+	- Everything now sets and reads the \Answered flag.
+
+0.36 Sat Aug 16 22:44:50 CDT 2003
+	- Styled the message view page. Re-ordered some of the divs.
+	- Moved the "full headers" link.
+	- Did the javascript links correctly. ( I think )
+	- Adjusted the all value to 1,000 in preferences.
+	- Removed the groups link from the template, it should be linked
+	  through the address book once it is operational.
+	- Classed the folders page, looks like I missed it.
+
+0.35 Fri Aug 15 23:19:50 CDT 2003
+	- Added css to all parts of the application, the message view is not
+	  yet complete.
+	- Working on the template some more.
+
+0.34 Wed Aug 13 08:44:13 CDT 2003
+	- Fixed a typo on the log out page.
+	- Fixed a bug in not setting the message folder that broke all of
+	  the response methods.
+
+0.33 Tue Aug 12 22:46:04 CDT 2003
+	- Fixed the no subject problem.
+	- Fixed the duplicate From header problem from some bad clients.
+	- Added the ability to specify the text ( or image tag ) for new
+	  messages as well as the address book.
+	- Fixed the date regex so it would deal with dates that were
+	  formated incorrectly.
+
+0.32 Sat Aug  9 23:13:45 CDT 2003
+	- Worked out the compose page javascript for the address book.
+	- Address book works.
+	- Clean a little in message_send.
+	- Added popup.tp, the popup frame.
+	- Reply All now makes sure all the addresses are unique.
+
+0.31 Wed Aug  6 22:44:06 CDT 2003
+	- Removed Nick Names from the database and the application. It
+	  really isn't needed, it was a bad idea to start with.
+	- Added sorting to the main address listing.
+	- Got the pop up window added. Need to work out how to add the email
+	  addresses without duplicating it. 
+
+0.30 Tue Aug  5 22:39:41 CDT 2003
+	- The drafts folder is now a "special" folder that behaves
+	  differently. It allows the user to re-compose a message in the
+	  folder.
+	- Moved compose_draft to part of response. It makes more sense there.
+	- Updated the list of PerlSetVars so they are correct.
+
+0.29 Tue Aug  5 11:20:12 CDT 2003
+	- Adjusted create to take a create fail but must suscribe flag.
+	  This takes care of the inital login and the folders already
+	  existing.
+
+0.28 Mon Aug  4 22:31:26 CDT 2003
+	- Added copyright and license information to all .pm files and
+	  scripts. 
+	- Made the delete from message view actually work in the trash.
+	- Figured out the inbox problem that arose today. I am having to not
+	  verify the inbox subscribe and test in cleanup on every page if I
+	  have subscribed to teh inbox. 
+	- Changed the from link to the subject. This is more inline with
+	  other webmail applications.
+
+0.27 Sun Aug  3 22:21:51 CDT 2003
+	- Worked out how to set the from address correctly. It is set as
+	  "$$site{user}@$$site{imap_domain}" with the reply to and pretty
+	  from set to the role. 
+	- Fixed the duplication of attachments when the "Attachments" button
+	  was clicked.
+	- Removed the stubs for the ability to switch imap servers.
+	- Fixed the compose_draft to remove the draft after it loads it.
+	- Don't take the reply-to from the from address, for sending.
+
+0.26 Sun Aug  3 18:33:50 CDT 2003
+	- Tracked down the database disconnect error when the user is first
+	  trying to log in. Was returing OK when the user was redirected,
+	  should have been returning DECLINED. 
+	- Got the next / previous links working on each message.
+	- Got the view full headers working now. 
+	- Added "true_delete" to the database schema.
+	- Added the true delete option to the preferences page.
+	- Got the inbox to actually subscribe, don't know what the original
+	  problem was and why this didn't work, could have been permissions.
+	- Added the imap function message_delete.
+	- Made true delete work for the folder and message delete.
+	- Added "Empty trash" which can be used for any folder.
+	- Made the trash folder's delete buttion actually delete the messages.
+	- The current folder is now not shown in the "move to" folder listing.
+	- Added a bit of documentation about the Webmail::Mail module.
+
+0.25 Sat Aug  2 23:14:18 CDT 2003
+	- Compose from draft now works, this of course means you can use
+	  attachments and not lose the message that you were working on.
+	- Got the size to show up on messages.
+	- Got the flags to show up on messages, forces the seen flag not to
+	  get set via clearflag. This is a bit of a hack because this is a
+	  webmail.
+	- Made the Reply included preference actually do something.
+
+0.24 Thu Jul 31 23:06:04 CDT 2003
+	- Got Attachments grabing to work on message view.
+	- Reply, Reply all and Forward now work.
+	- Forward, allows the attachments to be forwarded.
+	- The response function needs to be cleaned up a bit still.
+
+0.23 Wed Jul 30 22:55:24 CDT 2003
+	- Made the delete button work.
+	- Removed headers_detail from Webmail.pm preferences grab.
+	- Started trying to figure out the rest of the view message page.
+
+0.22 Tue Jul 29 23:11:33 CDT 2003
+	- Got the move messages working.
+
+0.21 Tue Jul 29 20:24:08 CDT 2003
+	- Fixed the header function to take uid rather than msgno.
+	- Got the click and unclick all Javascript worked out.
+	- Adjusted the template css a little to make content wider.
+	- Fixed the date field.
+	- Working on the actual move and delete portions of the imap page as
+	  well as the main folder listing page.
+
+0.20 Mon Jul 28 22:36:12 CDT 2003
+	- Got folder sorting working.
+	- Finished IMAP->sort. Fixed a bug in IMAP->list.
+	- Added the move and delete buttons to the folder listing, now to
+	  make them actually work...
+
+0.19 Sun Jul 27 22:14:38 CDT 2003
+	- Added the folder listing in BODY_AUX in cleanup.
+	- Working on how to parse a message. What a pita, and I lost a lot
+	  of time playing with Mail::Cclient's fetch_structure which looked
+	  to rip the message up for me, but alas does not.
+	- Got the message ripped apart, now to make it all pretty on the front end.
+	- Got the view message started.
+	- Realized header detail was a pretty useless preference, removed it.
+	- Adjusted css to see where stuff split out at.
+
+0.18 Sat Jul 26 22:09:59 CDT 2003
+	- Got the compose e-mail functionality to work reliably. 
+	- Start on the message_save funtion. 
+	- Renamed message_save to message_append, got it working.
+	- Finished out do_compose to allow draft saving and save a draft
+	  when the attachments button is clicked.
+	- Adjusted do_attachments to require the folder and the message id
+	  as well as returning the user to compose_draft with the same
+	  information when they are done.
+
+0.17 Fri Jul 25 23:27:11 CDT 2003
+	- Changed attach_path to file_path and used File_Path.
+	- Working on sending mail. The creation of the mail now works.
+	  Though I am having some problem on reading what MIME::Builder has
+	  built to pull out the from address.
+	- Added SMTP_Host and File_Path to the configuration options.
+
+0.16 Thu Jul 24 22:16:47 CDT 2003
+	- Working on the attahments page, needs some notes and cleaning.
+	- Added a couple of file upload related set vars.
+	- Working the creation of the actual message now, compose
+	  understands files now.
+	- Figured out conceptually how to do the message sending.
+
+0.15 Tue Jul 22 22:40:21 CDT 2003
+	- Added the valid characters check to the Webmail.pm and started
+	  using it in the checkvals for folders.
+	- Started on the Mail module. Go go gadget fun.
+	- Adjusted the default role name on login, not the email but
+	  "Default", which should make more sense... I hope.
+	- More work on Mail module.
+
+0.14 Sat Jul 19 23:32:01 CDT 2003
+	- Working on Folders.
+	- Added delete and rename to the imap library for folders.
+	- The folders module is complete, still need to find out if there
+	  are any special characters not allowed in the folder names and a
+	  safe way to pass the folder names. 
+	- Several additions and fixes to the IMAP module to facilitate
+	  folder management.
+
+0.13 Fri Jul 18 22:29:00 CDT 2003
+	- Working on the imap code.
+	- Fixed the file already subscribed to on initial login problem.
+	- Can't figure out why I can not subscribe to the inbox...
+	- Adjusted Roles to put in the folders list for saving the sent
+	  mail.
+	- Made the initial folders listing.
+
+0.12 Wed Jul 16 22:35:32 CDT 2003
+	- Starting on Groups.
+	- Stubbed out the folders module.
+	- Working on the IMAP module, trying to get folder and subscribed
+	  listings to work, they at least warn now.
+
+0.11 Sun Jul 13 22:33:32 CDT 2003
+	- Finished the first run at the address book.
+	- Added Alchemy::WebMail::AddressBook::Groups.
+	- Added Groups to the conf file and the _init function.
+
+0.10 Sun Jul 13 18:41:26 CDT 2003
+	- Worked out the no cookie, logout issue. 
+	- Made the Abstract warnings on make go away, they were getting old.
+	- Started on the address book.
+	- Added "close" call to the cleanup and login page, not such a good
+	  idea to have 50+ connections left open...
+
+0.09 Sun Jul 13 17:11:56 CDT 2003
+	- Working on Roles. ( do_add, do_main )
+	- Work in the _init function, get all the prefs for each request. 
+	- Completed the Roles module, needs some look help though.
+	- Completed the Preferences and Roles documentation.
+	- Fixed the first login to set the role name to ''.
+	- Added the WM_Cookie_Path set var.
+	- Started on the logout page, need to work out a couple of problems.
+
+0.08 Sun Jul  6 22:44:21 CDT 2003
+	- Finished the prefrences module. It still needs the bits to twiddle
+	  the imap server if the setvar is set. 
+	- Started on Roles.
+	- Work in the _init function.
+
+0.07 Sun Jul  6 18:12:37 CDT 2003
+	- Fixed the Authentication module to not warn by not returning the
+	  results of appbase_relocate. 
+	- Wrote the webmail_purgeuser.pl script for removing users from the
+	  database.
+	- Fixed IMAP module to allow for <user>.domain.com for *big*
+	  systems.
+	- Ensured that all of the WM_Pref_Session_Opt values are valid.
+	- Ensure that WM_Pref_Session is in WM_Pref_Session_Opt.
+	- Working on the Prefrences module.
+
+0.06 Fri Jul  4 13:27:41 CDT 2003
+	- Working on the _init function for when the user is actually
+	  connected building the folder list and re-setting the cookie and
+	  what not. 
+	- Adding the base templates to the source tree. These need work.
+	- Added the Roles module, and put the default stub in place. Updated
+	  the manifest file to reflect this change.
+	- Started working on the application again. Development platform is
+	  now Redhat 9 with apache 1.3.27 and mod_perl 1.26. 
+	- Working on the Preferences page. 
+	- More work on the preferences page update page.
+	- Added webmail_purgeuser.pl to the application, this will clear out
+	  everything a particular user has in the database. Adjusted the
+	  makefile accordingly.
+
+0.05 Sat Mar 22 23:19:26 CST 2003
+	- Using Crypt::CBC so we can use whatever for the encryption of the
+	  cookies. 	
+	- Completed the actual login process. Everything appears to be in
+	  working order. Now to start on another piece of the application.
+
+0.04 Fri Mar 21 22:39:14 CST 2003
+	- Database generation complete. Should have everything accounted for
+	  now, hopefully.
+	- Starting on the folder creation on initial login.
+	- Initial folder creation works. One doesn't seem to be able to
+	  subscribe to the "inbox" because it's not a mailbox ?
+	- Added default PerlSetVars and the pick up in _init.
+	- Default sql insertion added.
+	- The initial log in all now works. ( needs cookie to be set )
+	- Starting to add cookie_encrypt and cookie_decrypt to Webmail.pm
+
+0.03 Fri Feb 28 09:37:03 CST 2003
+	- Made the IMAP stuff a class that to deal with everything imap and
+	  keep it out of the main code so Mail::Cclient can be replaced at
+	  will.
+	- Added most of the apache setvars.
+	- Set up the login page authentcation check, needs to be tested and
+	  have the default preferences added to the db and the default
+	  folders need to be created during the first login.
+	- Added sql file to the manifest.
+
+0.02 Thu Feb 27 15:52:03 CST 2003
+	- Added code to Authentication.pm, this may need to have the actual
+	  imap check here...
+	- Added all of the modules configs to the apache config.
+	- Started on the sql information.
+	- Starting on the IMAP implementation, have hit some nasty problems
+	  with Mail::Cclient not wanting to compile correctly.
+	- Initial IMAP connection now works, after the compile problems its
+	  a small good sign.
+
+0.01  Tue Feb 25 09:24:10 2003
+	- Stubbed out the module documentation frames.
+	- Fixed all of the Makefiles to depend on WebMail.pm
+	- Added the stub of the conf file. 
+	- original version; created by h2xs 1.21 with options
+		-XA Alchemy::WebMail
+
