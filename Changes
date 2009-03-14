@@ -18,6 +18,12 @@ Revision history for Perl extension Alchemy::WebMail.
 	- Exploit the Cyrus/SASL to do real folders.
 	- Build the default SQL creation scripts for Mysql and Oracle.
 
+Requested Features:
+	- Search mail.
+	- Display attachment icon in main mail listing.
+	- Allow multiple attachments with the same name (seen from forwards)
+	- Fix the stale attachments from compose...on close script?
+
 -[ Revision History ]--------------------------------------------------
 
 0.77 Mon Dec 15 21:32:54 CST 2008
