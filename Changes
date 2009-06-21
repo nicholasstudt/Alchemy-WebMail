@@ -18,6 +18,9 @@ Revision history for Perl extension Alchemy::WebMail.
 	- Exploit the Cyrus/SASL to do real folders.
 	- Build the default SQL creation scripts for Mysql and Oracle.
 
+	- Don't make a trash folder, simply show all things with a "Trash"
+	  flag set.
+
 Requested Features:
 	- Search mail.
 	- Display attachment icon in main mail listing.
