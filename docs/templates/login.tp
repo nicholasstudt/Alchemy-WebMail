@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- 
+	Default login template for Alchemy::WebMail.
+-->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<title>
+##PAGE_TITLE##
+	</title>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+	<link rel="stylesheet" href="/ui/screen.css" type="text/css" 
+		media="screen, projection" />
+
+</head>
+<body>
+
+<div id="login">
+	<h1>
+##PAGE_TITLE##
+	</h1>
+
+	<div class="content">
+##BODY_TEXT##
+	</div>
+</div>
+
+</body>
+</html>
