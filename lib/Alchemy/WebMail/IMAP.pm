@@ -3,7 +3,8 @@ package Alchemy::WebMail::IMAP;
 use strict;
 
 use Encode qw( decode );
-use Mail::Cclient qw( set_callback );
+use Mail::Cclient;
+use Mail::IMAPClient;
 use MIME::Entity;
 use MIME::Parser;
 use Net::SMTP;
@@ -63,7 +64,7 @@ sub alive {
 sub close {
 	my $self = shift;
 
-	$self->{imap}->close();
+	$self->{imap}->disconnect();
 } # END $imap->close
 
 #-------------------------------------------------
@@ -84,32 +85,45 @@ sub decode_iso {
 sub error {
 	my $self = shift;
 
-	return( ( defined $self->{error} ) ? $self->{error} : undef );
-} # END $imap->error()  
+	return((defined $self->{error}) ? $self->{error} : undef );
+} # END $imap->error
 
 #-------------------------------------------------
-# $imap->folder_create( $folder, $can_fail )
+# $imap->folder_exists($folder)
+#-------------------------------------------------
+sub folder_exists {
+	my ($self, $folder) = @_;
+
+	return($self->{imap}->exists($folder));
+} # END $imap->folder_exists
+
+#-------------------------------------------------
+# $imap->folder_create($folder, $can_fail)
 #-------------------------------------------------
 sub folder_create {
-	my ( $self, $folder, $cfail ) = @_;
+	my ($self, $folder, $cfail) = @_;
 
 	# Allow fail of the create but not the subscibe.
-	$cfail = 0 if ( ! is_integer( $cfail ) );
+	$cfail = 0 if (! is_integer($cfail));
 
 	$self->{error} = undef;
 
-	# Must use the host proto when addressing a mailbox.
-	$self->{imap}->create( $self->{hostproto}.$folder );
+	if ($self->{imap}->exists($folder)) {
+		$self->{error} = 'Folder already exists.';
+		return(0);
+	}
 
-	if ( $cfail ) {
-		return( $self->folder_subscribe( $folder ) ); 
+	# Must use the host proto when addressing a mailbox.
+	if ($self->{imap}->create($folder)) {
+		return($self->folder_subscribe($folder)); 
 	}
 	else {
-		if ( defined $self->{error} ) {
-			return( 0 );
+		if ($cfail) {
+			return($self->folder_subscribe($folder)); 
 		}
 		else {
-			return( $self->folder_subscribe( $folder ) ); 
+			$self->{error} = "Could not create folder: $folder";
+			return(0);
 		}
 	}
 } # END $imap->folder_create
@@ -127,13 +141,16 @@ sub folder_delete {
 	
 	$self->{error} = undef;
 	
-	$self->folder_unsubscribe( $folder );
+	if (!$self->folder_unsubscribe($folder)) {
+		return(0); # Error already set.
+	}
 	
-	return( 0 ) if ( defined $self->{error} );
+	if (!$self->{imap}->delete($folder)) {
+		$self->{error} = "Could not delete folder: $folder";
+		return(0);
+	}
 
-	$self->{imap}->delete( $self->{hostproto}.$folder );
-
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return(1);
 } # END $imap->folder_delete
 
 #-------------------------------------------------
@@ -142,45 +159,38 @@ sub folder_delete {
 sub folder_list {
 	my $self = shift;
 
-	$self->{error} = undef;
+	my %folders;
 
-	$self->{imap}->lsub( $self->{hostproto}, '*' );
+	for my $f ($self->{imap}->subscribed) {
+		$folders{$f} = '';
+	}
 
-	return( ( defined $self->{folders} ) ? %{$self->{folders}} : ('' => '') );
+	return %folders
 } # END $imap->folder_list()
 
 #-------------------------------------------------
-# $imap->folder_nmsgs()
+# $imap->folder_nmsgs($folder)
 #-------------------------------------------------
 sub folder_nmsgs {
-	my $self = shift;
+	my ($self, $folder) = @_;
 
-	my $count = $self->{imap}->nmsgs();
+	my $count = $self->{imap}->message_count($folder);
 
-	return( ( defined $count ) ? $count : 0 );
+	return((defined $count) ? $count : 0);
 } # END $imap->folder_nmsgs
 
 #-------------------------------------------------
-# $imap->folder_open( $folder )
-#-------------------------------------------------
-sub folder_open {
-	my ( $self, $folder ) = @_;
-
-	$self->{imap}->open( $self->{hostproto}. $folder );
-} # END $imap->folder_open
-
-#-------------------------------------------------
-# $imap->folder_rename( $old_folder, $new_folder )
+# $imap->folder_rename($old_folder, $new_folder)
 #-------------------------------------------------
 sub folder_rename {
-	my ( $self, $old, $new ) = @_;
+	my ($self, $old, $new) = @_;
 
-	if ( ! is_text( $old ) ) {
+	if (! is_text($old)) {
 		$self->{error} = 'Folder does not exist.';
 		return( 0 );
 	}
 
-	if ( ! is_text( $new ) ) {
+	if (! is_text($new)) {
 		$self->{error} = 'Folder does not exist.';
 		return( 0 );
 	}
@@ -188,59 +198,60 @@ sub folder_rename {
 	$self->{error} = undef;
 
 	# rename
-	$self->{imap}->rename( 	$self->{hostproto}.$old, 
-							$self->{hostproto}.$new );
+	if(!$self->{imap}->rename($old, $new)) {
+		$self->{error} = 'Could not rename folder';
+		return(0);
+	}
 	
-	# check
-	return( 0 ) if ( defined $self->{error} );
-
-	# subscribe
-	$self->folder_subscribe( $new );
-
-	# check
-	return( 0 ) if ( defined $self->{error} );
+	# subscribe (error already set)
+	if(!$self->folder_subscribe($new)) {
+		return(0);
+	}
 
 	# unsubscribe 
-	$self->folder_unsubscribe( $old );
-
-	# check
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return($self->folder_unsubscribe($old));
 } # END $imap->folder_rename
 
 #-------------------------------------------------
-# $imap->folder_subscribe( $folder )
+# $imap->folder_subscribe($folder)
 #-------------------------------------------------
 sub folder_subscribe {
-	my ( $self, $folder ) = @_;
+	my ($self, $folder) = @_;
 
-	if ( ! is_text( $folder ) ) {
+	if (! is_text($folder)) {
 		$self->{error} = 'Folder is not valid.';
-		return( 0 );
+		return(0);
 	}
 	
 	$self->{error} = undef;
 
-	$self->{imap}->subscribe( $self->{hostproto}.$folder );
+	if(!$self->{imap}->subscribe($folder)) {
+		$self->{error} = "Could not subscribe to folder: $folder";
+		return(0)
+	}
 
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return(1);
 } # END $imap->folder_subscribe
 
 #-------------------------------------------------
-# $imap->folder_unsubscribe( $folder )
+# $imap->folder_unsubscribe($folder)
 #-------------------------------------------------
 sub folder_unsubscribe {
-	my ( $self, $folder ) = @_;
+	my ($self, $folder) = @_;
 	
-	if ( ! is_text( $folder ) ) {
+	if (! is_text($folder)) {
 		$self->{error} = 'Folder is not valid.';
 		return( 0 );
 	}
 
 	$self->{error} = undef;
 	
-	$self->{imap}->unsubscribe( $self->{hostproto}.$folder );
+	if(!$self->{imap}->unsubscribe($folder)) {
+		$self->{error} = "Could not unsubscribe folder: $folder";
+		return(0);
+	}
 
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return(1);
 } # END $imap->folder_unsubscribe
 
 #-------------------------------------------------
@@ -258,8 +269,8 @@ sub message_append {
 	my $date = Mail::Cclient::rfc822_date;
 
 	# Get the list of uid's in the folder.
-	$self->folder_open( $folder );
-	my $nmsg = $self->folder_nmsgs();
+	#$self->folder_open( $folder );
+	my $nmsg = $self->folder_nmsgs($folder);
 	
 	for my $msg ( 1..$nmsg ) {
 		my $uid 	= $self->{imap}->uid( $msg );
@@ -271,8 +282,8 @@ sub message_append {
 							$message->stringify, $date, $flag );
 
 	# Get the uid's now. 
-	$self->folder_open( $folder );
-	my $nnmsg = $self->folder_nmsgs();
+	#$self->folder_open( $folder );
+	my $nnmsg = $self->folder_nmsgs($folder);
 
 	for my $msg ( 1..$nnmsg ) {
 
@@ -712,7 +723,7 @@ sub message_sort {
 	$order 	= ( $order ) ? 1 : 0;
 	my @bunk; # Bunk to deal with the no messages returned case.
 	
-	$self->folder_open( $folder );
+	$self->{imap}->select($folder);
 
 	# Grab a sorted list of a particular folder. 
 	# Returns the message id's in order.
@@ -740,6 +751,9 @@ sub message_uid {
 sub new {
 	my ( $proto, $host, $protocol, $mailbox, $user, $pass, $tmp ) = @_;
 
+	# FIXME: Make this understand SSL again.
+	# Fix the arguement list.
+
 	die "IMAP Hostname undefined" 	if ( ! is_text( $host ) );
 	die "IMAP protocol undefined" 	if ( ! is_text( $protocol ) );
 	die "IMAP mailbox undefined" 	if ( ! is_text( $mailbox ) );
@@ -766,24 +780,28 @@ sub new {
 	bless( $self, $class );
 
 	# The login call back.
-	set_callback 	login 	=> sub { 	return( $self->{user},
-												$self->{password} );
-									},
-					log 	=> sub { 	my ( $str, $type ) = @_;
-										if ( $type =~ /error/ ) {
-											$self->{error} = $str;
-										}
-									},
-					lsub	=> sub {
-										my ( $strm, $dlim, $mbox, $attr ) = @_;
-										$mbox =~ s/^.*}//;
-										$self->{folders}{$mbox} = $attr;
-									};
+#	Mail::Cclient::set_callback( 	login 	=> sub { 	return( $self->{user},
+#												$self->{password} );
+#									},
+#					log 	=> sub { 	my ( $str, $type ) = @_;
+#										if ( $type =~ /error/ ) {
+#											$self->{error} = $str;
+#										}
+#									},
+#					lsub	=> sub {
+#										my ( $strm, $dlim, $mbox, $attr ) = @_;
+#										$mbox =~ s/^.*}//;
+#										$self->{folders}{$mbox} = $attr;
+#									});
 
 	# Set these so we don't waste time.
-	Mail::Cclient::parameters( undef, RSHTIMEOUT => 0, MAXLOGINTRIALS => 1 );
+	#Mail::Cclient::parameters( undef, RSHTIMEOUT => 0, MAXLOGINTRIALS => 1 );
 
-	$self->{imap} = Mail::Cclient->new( $self->{hostproto}.$self->{mailbox} );
+	#$self->{imap} = Mail::Cclient->new( $self->{hostproto}.$self->{mailbox} );
+	
+	$self->{imap} = Mail::IMAPClient->new(	Server => $self->{host},
+											User => $self->{user},
+											Password => $self->{password},);
 
 	return( $self );
 } # END new()

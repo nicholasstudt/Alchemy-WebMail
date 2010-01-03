@@ -6,12 +6,12 @@ use Crypt::CBC;
 use KrKit::AppBase;
 use KrKit::DB;
 use KrKit::Handler;
-use KrKit::HTML qw( :common );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
-our $VERSION = '0.77';
-our @ISA = ( 'KrKit::Handler' );
+our $VERSION = '1.0';
+our @ISA = ('KrKit::Handler');
 
 ############################################################
 # Functions                                                #
@@ -21,45 +21,37 @@ our @ISA = ( 'KrKit::Handler' );
 # $self->_cleanup( $r )
 #-------------------------------------------------
 sub _cleanup {
-	my ( $site, $r ) = @_;
+	my ($site, $r) = @_;
  	
-	$site->SUPER::_cleanup( $r );
+	$site->SUPER::_cleanup($r);
 
-	if ( defined $$site{imap} ) {
+	if (defined $$site{imap}) {
 		# Generate the folder list. ( new mail count )
-		my @listing;
-		my %folders 	= $$site{imap}->folder_list( $$site{mask_inbox} );	
+		my @l;
+		my %folders 	= $$site{imap}->folder_list();	
 		my $real_inbox 	= $$site{imap_inbox};
 
 		# Try the inbox if we don't have it.
-		if ( ! defined $folders{$real_inbox} ) {
-			$$site{imap}->folder_subscribe( $real_inbox );
+		if (! defined $folders{$real_inbox}) {
+			$$site{imap}->folder_subscribe($real_inbox);
 		}
 
-		for my $fldr ( sort { ( $a eq $real_inbox ) ? -1 : $a cmp $b }
-							( keys %folders ) ) {
+		# This forces the Inbox to the top, and sorts everything after it.
+		for my $fldr ( sort { ($a eq $real_inbox) ? -1 : $a cmp $b }
+							(keys %folders) ) {
 		
-			$$site{imap}->folder_open( $fldr );	
-			my $mask 	= $site->inbox_mask( $fldr );
+			my $mask = $site->inbox_mask( $fldr );
 
-			if ( $$site{count_mail} || $fldr eq $$site{imap_inbox} ) {
-				my $count 	= $$site{imap}->folder_nmsgs();
+			if ($$site{count_mail} || $fldr eq $$site{imap_inbox}) {
+				my $count = $$site{imap}->folder_nmsgs( $fldr );
+
+				$mask .= " ($count)";
+			}
 			
-				push( @listing, '<li>', 
-									ht_a( 	"$$site{mail_root}/main/$fldr", 
-											"$mask ($count)"),
-								'</li>' );
-			}
-			else {
-				push( @listing, '<li>', 
-									ht_a( 	"$$site{mail_root}/main/$fldr", 
-											$mask ),
-								'</li>' );
-			}
+			push(@l, ht_li(undef, ht_a("$$site{mail_root}/main/$fldr", $mask)));
 		}
 
-		$$site{'body_aux'} = ht_lines( @listing );
-	
+		$$site{'body_aux'} = ht_lines(@l);
 		$$site{imap}->close(); 			# close connection.
 	}
 
@@ -75,63 +67,62 @@ sub _init {
 	$site->SUPER::_init( $r );
 
 	$$site{'remote_ip'}		= $r->connection->remote_ip;
-	
-	$$site{'imap_domain'}	= $r->dir_config( 'WM_Domain') 	|| '';
-	$$site{'imap_host'}		= $r->dir_config( 'WM_Host' )	|| 'localhost';
-	$$site{'imap_proto'}	= $r->dir_config( 'WM_Proto' ) 	|| 'imap/notls';
+	$$site{'imap_domain'}	= $r->dir_config('WM_Domain') 	|| '';
+	$$site{'imap_host'}		= $r->dir_config('WM_Host')		|| 'localhost';
+	$$site{'imap_proto'}	= $r->dir_config('WM_Proto') 	|| 'imap/notls';
 
 	# Inbox must be set to "INBOX" otherwise it duplicates.
-	$$site{'imap_inbox'}	= $r->dir_config( 'WM_Inbox' ) 	|| 'INBOX';
-	$$site{'mask_inbox'}	= $r->dir_config( 'WM_Inbox_Mask' );
-	$$site{'imap_drafts'}	= $r->dir_config( 'WM_Draft' ) 	|| 'Drafts';
-	$$site{'imap_sent'}		= $r->dir_config( 'WM_Sent' ) 	|| 'Sentmail';
-	$$site{'imap_trash'}	= $r->dir_config( 'WM_Trash' ) 	|| 'Trash';
+	$$site{'mask_inbox'}	= $r->dir_config('WM_Inbox_Mask');
+	$$site{'imap_inbox'}	= $r->dir_config('WM_Inbox') 	|| 'INBOX';
+	$$site{'imap_drafts'}	= $r->dir_config('WM_Draft') 	|| 'Drafts';
+	$$site{'imap_sent'}		= $r->dir_config('WM_Sent') 	|| 'Sentmail';
+	$$site{'imap_trash'}	= $r->dir_config('WM_Trash') 	|| 'Trash';
 
-	$$site{'cookie_name'}	= $r->dir_config( 'WM_CookieName') || 'WebMail';
-	$$site{'cookie_path'}	= $r->dir_config( 'WM_CookiePath') || '/';
-	$$site{'secretkey'}		= $r->dir_config( 'WM_SecretKey' );
-	$$site{'cipher'}		= $r->dir_config( 'WM_Cipher' );
-	$$site{'x-mailer'}		= $r->dir_config( 'WM_X-Mailer' ) 
+	$$site{'cookie_name'}	= $r->dir_config('WM_CookieName') || 'WebMail';
+	$$site{'cookie_path'}	= $r->dir_config('WM_CookiePath') || '/';
+	$$site{'secretkey'}		= $r->dir_config('WM_SecretKey');
+	$$site{'cipher'}		= $r->dir_config('WM_Cipher');
+	$$site{'x-mailer'}		= $r->dir_config('WM_X-Mailer') 
 								|| "WebMail $VERSION";
 	
-	$$site{'max_sub'} 		= $r->dir_config( 'WM_Subject_Max' ) || '0';
-	$$site{'count_mail'} 	= $r->dir_config( 'WM_Count_Messages' ) || '0';
+	$$site{'max_sub'} 		= $r->dir_config('WM_Subject_Max') || '0';
+	$$site{'count_mail'} 	= $r->dir_config('WM_Count_Messages') || '0';
 
-	$$site{'mail_root'}		= $r->dir_config( 'WM_MailRoot' ) 		|| '/';
-	$$site{'mail_fp'}		= $r->dir_config( 'WM_MailFP' ) 		|| '/';
-	$$site{'address_root'}	= $r->dir_config( 'WM_AddressRoot' ) 	|| '/';
-	$$site{'group_root'}	= $r->dir_config( 'WM_AGroupRoot' ) 	|| '/';
-	$$site{'folder_root'}	= $r->dir_config( 'WM_FolderRoot' ) 	|| '/';
-	$$site{'pref_root'}		= $r->dir_config( 'WM_PrefRoot' ) 		|| '/';
-	$$site{'login_root'}	= $r->dir_config( 'WM_LoginRoot' ) 		|| '/';
-	$$site{'new_icon'}		= $r->dir_config( 'WM_NewIcon' ) 		|| 'New';
-	$$site{'reply_icon'}	= $r->dir_config( 'WM_ReplyIcon' ) 		|| 'R';
-	$$site{'addr_icon'}		= $r->dir_config( 'WM_ABookIcon' ) 		
+	$$site{'mail_root'}		= $r->dir_config('WM_MailRoot') 	|| '/';
+	$$site{'mail_fp'}		= $r->dir_config('WM_MailFP') 		|| '/';
+	$$site{'address_root'}	= $r->dir_config('WM_AddressRoot') 	|| '/';
+	$$site{'group_root'}	= $r->dir_config('WM_AGroupRoot') 	|| '/';
+	$$site{'folder_root'}	= $r->dir_config('WM_FolderRoot') 	|| '/';
+	$$site{'pref_root'}		= $r->dir_config('WM_PrefRoot') 	|| '/';
+	$$site{'login_root'}	= $r->dir_config('WM_LoginRoot')	|| '/';
+	$$site{'new_icon'}		= $r->dir_config('WM_NewIcon') 		|| 'New';
+	$$site{'reply_icon'}	= $r->dir_config('WM_ReplyIcon') 	|| 'R';
+	$$site{'addr_icon'}		= $r->dir_config('WM_ABookIcon') 	
 								|| 'Address book';
 
 	# This is used for the Preferences Page.
-	$$site{'p_sessopt'} 	= $r->dir_config( 'WM_Pref_Session_Opt' );
+	$$site{'p_sessopt'} 	= $r->dir_config('WM_Pref_Session_Opt');
 
 	# Validate WM_Pref_Session_Opt
-	if ( ! is_text( $$site{'p_sessopt'} ) ) {
+	if (! is_text($$site{'p_sessopt'})) {
 		$$site{'p_sessopt'} = 'session,2:00,8:00';
 	}
 	else {
-		for my $sopt ( split( ',', $$site{'p_sessopt'} ) ) {
+		for my $sopt (split(',', $$site{'p_sessopt'})) {
 
-			next if ( $sopt =~ /session/i );
+			next if ($sopt =~ /session/i);
 
-			if ( $sopt !~ /\d+:\d+/ ) {
+			if ($sopt !~ /\d+:\d+/) {
 				die "Invalid 'WM_Pref_Session_Opt': '$sopt'";
 			}
 
-			my ( $hour, $min ) = split( ':', $sopt );
+			my ($hour, $min) = split(':', $sopt);
 
-			if ( $min < 0 || $min > 59 ) {
+			if ($min < 0 || $min > 59) {
 				die "Invalid 'WM_Pref_Session_Opt' minutes: '$sopt'";
 			}
 
-			if ( $hour < 0 ) {
+			if ($hour < 0) {
 				die "Invalid 'WM_Pref_Session_Opt' hours: '$sopt'";
 			}
 		}
@@ -142,7 +133,7 @@ sub _init {
 	$$site{'pass'}	= '';
 
 	# Grab the cookie and figure it out.
-	my $cookie = appbase_cookie_retrieve( $r );
+	my $cookie = appbase_cookie_retrieve($r);
 
 	# Make sure we have a mostly good cookie for top of if.
 	if ( ( is_text( $$cookie{ $$site{cookie_name} } ) ) && 
@@ -151,7 +142,7 @@ sub _init {
 		my $cookie_text = $$cookie{ $$site{cookie_name} };
 
 		# decrypt the cookie.
-		( $$site{user}, $$site{pass} ) = $site->cookie_decrypt( $cookie_text );
+		($$site{user}, $$site{pass}) = $site->cookie_decrypt( $cookie_text );
 
 		# Set the username
 		$r->user( $$site{user} );
@@ -167,22 +158,22 @@ sub _init {
 		  $$site{'p_sess_s'}, $$site{'p_fcount'}, $$site{'p_sorder'}, 
 		  $$site{'p_sfield'} ) = db_next( $sth );
 	
-		db_finish( $sth );
+		db_finish($sth);
 
 		# re-set the cookie.
-		$$site{p_sess} 	= $site->s2hm( $$site{'p_sess_s'} );
+		$$site{p_sess} 	= $site->s2hm($$site{'p_sess_s'});
 
-		my $crypt 		= $site->cookie_encrypt( $$site{user}, $$site{pass} ); 
-		my $expire 		= ( $$site{p_sess_s} > 0 ) ? $$site{p_sess_s} : undef ;
+		my $crypt 		= $site->cookie_encrypt($$site{user}, $$site{pass}); 
+		my $expire 		= ($$site{p_sess_s} > 0) ? $$site{p_sess_s} : undef;
 
-		appbase_cookie_set( $r, $$site{cookie_name}, $crypt, $expire, 
-							$$site{cookie_path} );
+		appbase_cookie_set($r, $$site{cookie_name}, $crypt, $expire, 
+							$$site{cookie_path});
 
 		# log in to the imap server.
-		$$site{imap} = Alchemy::WebMail::IMAP->new( $$site{imap_host}, 
+		$$site{imap} = Alchemy::WebMail::IMAP->new($$site{imap_host}, 
 									$$site{imap_proto}, $$site{imap_inbox},
 									$$site{user}, $$site{pass},
-									$$site{file_tmp} );
+									$$site{file_tmp});
 	}
 	else {
 		# These are used by the login page only.

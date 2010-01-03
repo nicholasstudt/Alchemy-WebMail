@@ -42,9 +42,7 @@ sub _checkvals {
 		}
 
 		# Make sure the folder does not already exist.
-		my %folders = $$k{imap}->folder_list();	
-
-		if ( defined $folders{$in->{folder}} ) {
+		if ($$k{imap}->folder_exists($in->{folder})) {
 			push( @err, ht_li( {}, 'This folder already exists.' ) );
 		}
 	}
@@ -163,9 +161,7 @@ sub do_delete {
 					ht_uform() );
 		}
 
-		$$k{imap}->folder_open( $folder );
-
-		my $count = $$k{imap}->folder_nmsgs();
+		my $count = $$k{imap}->folder_nmsgs($folder);
 
 		return( ht_form_js( "$$k{uri}/yes" ), 
 				ht_div( { 'class' => 'box' } ),
@@ -253,9 +249,7 @@ sub do_main {
 	for my $folder ( sort 	{ ( $a eq $$k{imap_inbox} ) ? -1 : $a cmp $b }
 							( keys( %folders )  ) ) {
 
-		$$k{imap}->folder_open( $folder );
-
-		my $count = $$k{imap}->folder_nmsgs();
+		my $count = $$k{imap}->folder_nmsgs($folder);
 
 		push( @lines,	ht_tr(),
 						ht_td( {}, $k->inbox_mask( $folder ) ),

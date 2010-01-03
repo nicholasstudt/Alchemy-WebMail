@@ -29,6 +29,11 @@ Requested Features:
 
 -[ Revision History ]--------------------------------------------------
 
+1.0
+	- Converted from Mail::Cclient to Mail::IMAPClient.
+	- 
+
+
 0.77 Mon Dec 15 21:32:54 CST 2008
 	- Last working in AddressBook.
 

@@ -10,7 +10,7 @@ WriteMakefile(
 							'Apache2::Request'	=> 0,
 							'Date::Manip'		=> 0,
 							'Crypt::CBC' 		=> 0,
-							'Mail::Cclient'		=> 1.8,
+							'Mail::Cclient'		=> 0,
 							'MIME::Entity'		=> 0,
 							'MIME::Parser'		=> 0,
 						},
