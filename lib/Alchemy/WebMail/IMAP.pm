@@ -71,10 +71,10 @@ sub close {
 # $imap->decode_iso()
 #-------------------------------------------------
 sub decode_iso {
-	my ( $self, $string ) = @_;
+	my ($self, $string) = @_;
 
-	# Decodes iso stuff in a string.
- 	$string =~ s/(=\?.*\?=)/decode( "MIME-Header", $1 )/eg;
+	# Decodes UTF8 stuff in a string.
+ 	$string =~ s/(=\?.*\?=)/decode("MIME-Header", $1)/eg;
 
 	return( $string );
 } # END $imap->decode_iso
@@ -129,14 +129,14 @@ sub folder_create {
 } # END $imap->folder_create
 
 #-------------------------------------------------
-# $imap->folder_delete( $folder )
+# $imap->folder_delete($folder)
 #-------------------------------------------------
 sub folder_delete {
-	my ( $self, $folder ) = @_;
+	my ($self, $folder) = @_;
 
-	if ( ! is_text( $folder ) ) {
+	if (! is_text($folder)) {
 		$self->{error} = 'Folder does not exist';
-		return( 0 );
+		return(0);
 	}
 	
 	$self->{error} = undef;
@@ -466,30 +466,19 @@ sub message_delete {
 sub message_elt {
 	my ( $self, $uid ) = @_;
 
-	return( 0 ) if ( ! is_integer( $uid ) );
+	return(0) if (! is_integer($uid));
 
-	# This populates the elt.
-	$self->{imap}->fetch_structure( $uid, 'uid' );
-
-	my $elt 	= $self->{imap}->elt( $self->message_msgno( $uid ) );
-	my $flags 	= $elt->flags;
-	my $size	= $elt->rfc822_size;
-
-	$self->{imap}->gc( 'elt' );
-
-	# Map the flags.
-	my %flag_list;
-
-	for my $flag ( @{$flags} ) {
+	my %flag_list; # Map the flags.
+	for my $flag ($self->{imap}->flags($uid)) {
 		$flag_list{$flag} = 1;
 	}
 
-	# Fix the size.
-	my $k = sprintf( "%.1f", ( $size / 1024 ) );
-	my $m = sprintf( "%.1f", ( ( $size / 1024 ) / 1024 ) );
-	$size = ( $m < 1 ) ? ( ( $k < 1 ) ? '&lt;1k' : $k.'k' ) : $m.'MB';
+	my $size = $self->{imap}->size($uid); # Fix the size.
+	my $k = sprintf("%.1f", ($size / 1024));
+	my $m = sprintf("%.1f", (($size / 1024) / 1024));
 
-	return( $size, \%flag_list );
+	return((($m < 1) ? (($k < 1) ? '&lt;1 KiB' : $k.' KiB') : $m.' MiB'),
+			\%flag_list);
 } # END $imap->message_elt
 
 #-------------------------------------------------
@@ -500,14 +489,16 @@ sub message_header {
 
 	my %headers;
 
-	for my $field ( @fields ) {
-		my $hdr = $self->{imap}->fetchheader( $uid, [$field], 'uid' );
+	my $headers = $self->{imap}->parse_headers($uid, @fields);
 
-		$hdr =~ s/$field: //;
-		$headers{$field} = $hdr;
-	}
+#	for my $field ( @fields ) {
+#		my $hdr = $self->{imap}->fetchheader( $uid, [$field], 'uid' );
+#
+#		$hdr =~ s/$field: //;
+#		$headers{$field} = $hdr;
+#	}
 
-	return( %headers );
+	return( %{$headers} );
 } # END $imap->message_header
 
 #-------------------------------------------------
@@ -713,27 +704,18 @@ sub message_setflag {
 # $imap->message_sort( $folder, $field, $order )
 #-------------------------------------------------
 sub message_sort {
-	my ( $self, $folder, $field, $order, $type  ) = @_;
+	my ($self, $folder, $field, $order, $type) = @_;
 
-	return( undef ) if ( ! is_text( $folder ) );
-	return( undef ) if ( ! is_text( $field ) );
+	return(undef) if (! is_text($folder));
+	return(undef) if (! is_text($field));
 
-	$type 	= 'ALL' if ( ! defined $type );
-	$order 	= 1 	if ( ! defined $order );
-	$order 	= ( $order ) ? 1 : 0;
-	my @bunk; # Bunk to deal with the no messages returned case.
+	$type 	= 'ALL' if (! defined $type);
+	$order 	= 1 	if (! defined $order);
+	$order 	= ($order) ? '' : 'REVERSE ';
 	
 	$self->{imap}->select($folder);
 
-	# Grab a sorted list of a particular folder. 
-	# Returns the message id's in order.
-	my $array = $self->{imap}->sort('SORT' 		=> [$field, $order],
-									'CHARSET' 	=> 'UTF-8',
-									'SEARCH'	=> $type,
-									'FLAG' 		=> ['uid']  ); 
-
-	
-	return( defined $array ? @{$array} : @bunk );
+	return($self->{imap}->sort($order. uc($field), 'UTF-8', $type));
 } # END $imap->message_sort
 
 #-------------------------------------------------

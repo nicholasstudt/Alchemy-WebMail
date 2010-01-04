@@ -536,104 +536,97 @@ sub do_delete {
 } # END $site->do_empty_trash
 
 #-------------------------------------------------
-# $site->do_main( $r, $folder, $field, $order )
+# $site->do_main($r, $folder, $field, $order)
 #-------------------------------------------------
 sub do_main {
-	my ( $site, $r, $folder, $field, $order, $offset ) = @_;
+	my ($site, $r, $folder, $field, $order, $offset) = @_;
 
 	my %ln; # Links for the headers.
-	my $in 				= $site->param( Apache2::Request->new( $r ) );
-	$folder 			= $$site{imap_inbox} 	if ( ! is_text( $folder ) );
-	$field 				= $$site{p_sfield} 		if ( ! is_text( $field ) );
-	$order 				= $$site{p_sorder} 		if ( ! is_integer( $order ) );
-	$offset 			= 0 					if ( ! is_integer( $offset ) );
-	$$site{page_title} 	.= $site->inbox_mask( $folder ). ' view';
-	my $draft 			= ( $folder eq $$site{imap_drafts} ) ? 1 : 0;
-	my $sentmail		= ( $folder eq $$site{imap_sent} ) ? 1 : 0;
+	my $in 				= $site->param( Apache2::Request->new($r) );
+	$folder 			= $$site{imap_inbox} 	if (! is_text($folder));
+	$field 				= $$site{p_sfield} 		if (! is_text($field));
+	$order 				= $$site{p_sorder} 		if (! is_integer($order));
+	$offset 			= 0 					if (! is_integer($offset));
+	$$site{page_title} 	.= $site->inbox_mask($folder). ' view';
+	my $draft 			= ($folder eq $$site{imap_drafts}) ? 1 : 0;
+	my $sentmail		= ($folder eq $$site{imap_sent}) ? 1 : 0;
 
 	# Really, don't try to read the Javascript, it's better that way ;)
 	my $clkjs = 	q!onClick="var e, i=0, o=document.fldr; while (e=o[i++]) !.
 					q!if (e.type == 'checkbox') e.checked=o.mstr.checked;"!;
 
-	my @folders = ( '', 'Move to folder...' );
+	my @lines;
+	my @folders = ('', 'Move to folder...');
 	my %fldrs 	= $$site{imap}->folder_list();
 
-	for my $foldr ( sort 	{ ( $a eq $$site{imap_inbox} ) ? -1 : $a cmp $b } 
-							( keys( %fldrs ) ) ) {
+	for my $foldr (sort	{ ($a eq $$site{imap_inbox}) ? -1 : $a cmp $b } 
+						(keys(%fldrs))) {
 		
-		next if ( $foldr eq $folder );
+		next if ($foldr eq $folder);
 
-		push( @folders, $foldr, $site->inbox_mask( $foldr ) );
+		push(@folders, $foldr, $site->inbox_mask($foldr));
 	}
 
-	my @lines;
-
-	if ( $in->{move} ) { 			# Do the move
-		if ( is_text( $in->{folder} ) && defined $fldrs{$in->{folder}} ) {
+	if ($in->{move}) { 			# Do the move
+		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
 			my $count = 0;
 
-			for my $msg ( keys( %$in ) ) {
-				next if ( $msg !~ /^msg_/ );
-				( my $muid = $msg ) =~ s/^msg_//;
-				$count += $$site{imap}->message_move( 	$folder, $muid, 
-														$in->{folder} );
+			for my $msg (keys(%$in)) {
+				next if ($msg !~ /^msg_/);
+				(my $muid = $msg) =~ s/^msg_//;
+				$count += $$site{imap}->message_move($folder, $muid, 
+														$in->{folder});
 			}
 
-			push( @lines, "$count message(s) moved to $in->{folder}." );
+			push(@lines, "$count message(s) moved to $in->{folder}.");
 		}
 	}
 
-	if ( $in->{copy} ) {
-
-		if ( is_text( $in->{folder} ) && defined $fldrs{$in->{folder}} ) {
+	if ($in->{copy}) {
+		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
 			my $count = 0;
 
-			for my $msg ( keys( %$in ) ) {
-				next if ( $msg !~ /^msg_/ );
-				( my $muid = $msg ) =~ s/^msg_//;
-				$count += $$site{imap}->message_copy( 	$folder, $muid, 
-														$in->{folder} );
+			for my $msg (keys(%$in)) {
+				next if ($msg !~ /^msg_/);
+				(my $muid = $msg) =~ s/^msg_//;
+				$count += $$site{imap}->message_copy($folder, $muid, 
+														$in->{folder});
 			}
 
-			push( @lines, "$count message(s) copied to $in->{folder}." );
+			push(@lines, "$count message(s) copied to $in->{folder}.");
 		}
-
 	}
 
-	if ( $in->{delete} ) { 		# Do the delete.
+	if ($in->{delete}) { 		# Do the delete.
 		my $count = 0;
 
 		# Force delete in the trash bin.
-		$$site{p_delete} = 1 if ( $folder eq $$site{imap_trash} );
+		$$site{p_delete} = 1 if ($folder eq $$site{imap_trash});
 
-		for my $msg ( keys( %$in ) ) {
-			next if ( $msg !~ /^msg_/ );
-			( my $muid = $msg ) =~ s/^msg_//;
+		for my $msg (keys(%$in)) {
+			next if ($msg !~ /^msg_/);
+			(my $muid = $msg) =~ s/^msg_//;
 		
-			if ( $$site{p_delete} ) {
-				$count += $$site{imap}->message_delete(	$folder, $muid );
-
+			if ($$site{p_delete}) {
+				$count += $$site{imap}->message_delete($folder, $muid);
 			}
 			else {
-				$count += $$site{imap}->message_move( 	$folder, $muid, 
-														$$site{imap_trash} );
+				$count += $$site{imap}->message_move($folder, $muid, 
+														$$site{imap_trash});
 			}
 		}
 
-		if ( $$site{p_delete} ) {
-			push( @lines, "$count message(s) deleted." );
-		}
-		else {
-			push( @lines, "$count message(s) moved to $$site{imap_trash}." );
-		}
+		push(@lines, 
+			"$count message(s) ". 
+			($$site{p_delete} ? 'deleted.' : "moved to $$site{imap_trash}."));
 	}
 
 	# Work out the header links.
-	for my $fld ( 'to', 'from', 'subject', 'date', 'size' ) {
+	for my $fld ('to', 'from', 'subject', 'date', 'size') {
 		my $root = "$$site{rootp}/main/$folder";
 
-		if ( $field =~ /$fld/i ) {
-			$ln{$fld} = ( $order ) ? "$root/$fld/0" : "$root/$fld/1";
+		if ($field =~ /$fld/i) {
+			$ln{$fld} = ($order) ? "$root/$fld/0" : "$root/$fld/1";
 		}
 		else {
 			$ln{$fld} = "$root/$fld/1";
@@ -642,75 +635,76 @@ sub do_main {
 
 	# Get the message order, and count stuff.
 	my $count 	= 0;
-	my @sorted 	= $$site{imap}->message_sort( $folder, $field, $order );
-	my $total 	= scalar( @sorted );
+	my @sorted 	= $$site{imap}->message_sort($folder, $field, $order);
+	my $total 	= scalar(@sorted);
 	my $ptotal 	= $$site{p_fcount} + $offset;
-	my $mtotal 	= ( $ptotal > $total ) ? $total: $ptotal;
+	my $mtotal 	= ($ptotal > $total) ? $total: $ptotal;
 
-	push( @lines,  	ht_form_js( $$site{uri}, 'name="fldr"' ),	
-					ht_div( { 'class' => 'box' } ),
-					ht_table( { } ),
+	push(@lines,  	ht_form_js($$site{uri}, 'name="fldr"'),	
+					ht_div({ 'class' => 'box' }),
+					ht_table(undef),
 
 					ht_tr(),
-						ht_td( {	colspan => 3, 'class' => 'hdr' } ), 
-							( $total ? ($offset + 1). " - $mtotal of " : '' ),
+						ht_td({	colspan => 3, 'class' => 'hdr' }), 
+							($total ? ($offset + 1). " - $mtotal of " : ''),
 							"$total messages",
 						ht_utd(),
-						ht_td( { colspan => 3, 'class' => 'rhdr' } ), 
-							ht_select( 'folder', 1, $in, '', '', @folders ),
-							ht_submit( 'move', 'Move' ),
-							ht_submit( 'copy', 'Copy' ),
-							ht_submit( 'delete', 'Delete' ),
+						ht_td({ colspan => 3, 'class' => 'rhdr' }), 
+							ht_select('folder', 1, $in, '', '', @folders),
+							ht_submit('move', 'Move'),
+							ht_submit('copy', 'Copy'),
+							ht_submit('delete', 'Delete'),
 						ht_utd(),
 					ht_utr(),
 
 					ht_tr(),
-						ht_td( 	{ 'class' => 'shd' }, 
-								ht_checkbox( 'mstr', 1, 0, $clkjs ) ),
-						ht_td( { 'class' => 'shd' }, '' ),  # new 
-						ht_td( { 'class' => 'shd' } ) );
+						ht_td({ 'class' => 'shd' }, 
+								ht_checkbox('mstr', 1, 0, $clkjs)),
+						ht_td({ 'class' => 'shd' }, ''),  # new 
+						ht_td({ 'class' => 'shd' }));
 
-	if ( $draft || $sentmail ) {
-		push( @lines, ht_a( $ln{to}, 'To' ) ); 
+	if ($draft || $sentmail) {
+		push(@lines, ht_a($ln{to}, 'To')); 
 	}
 	else {
-		push( @lines, ht_a( $ln{from}, 'From' ) ); 
+		push(@lines, ht_a($ln{from}, 'From')); 
 	}
 
-	push( @lines, 		ht_utd(),
-						ht_td( 	{ 'class' => 'shd' },
-								ht_a( $ln{subject}, 'Subject' ) ),
-						ht_td( 	{ 'class' => 'shd' },
-								ht_a( $ln{date}, 'Date' ) ),
-						ht_td( 	{ 'class' => 'shd' },
-								ht_a( $ln{size}, 'Size' ) ),
-					ht_utr(), );
+	push(@lines, 	ht_utd(),
+					ht_td({ 'class' => 'shd' }, ht_a($ln{subject}, 'Subject')),
+					ht_td({ 'class' => 'shd' }, ht_a($ln{date}, 'Date')),
+					ht_td({ 'class' => 'shd' }, ht_a($ln{size}, 'Size')),
+					ht_utr() );
 
-
-	for my $uid ( @sorted ) {
-		next if ( ! defined $uid );
+	for my $uid (@sorted) {
+		next if (! defined $uid);
 
 		$count++;
 
-		next if ( $count <= $offset );
-		last if ( $count > ( $$site{p_fcount} + $offset ) );
+		next if ($count <= $offset);
+		last if ($count > ($$site{p_fcount} + $offset));
 	
-		my ( $size, $flags ) = $$site{imap}->message_elt( $uid );
+		my ($size, $flags) = $$site{imap}->message_elt($uid);
 
 		# \Answered means it has been replied to.
-		my $flag = ( defined $$flags{'\Seen'} ) ? '' : $$site{new_icon};
-		$flag 	.= ( defined $$flags{'\Answered'} ) ? $$site{reply_icon}:'';
+		my $flag = (defined $$flags{'\Seen'}) ? '' : $$site{new_icon};
+		$flag 	.= (defined $$flags{'\Answered'}) ? $$site{reply_icon} : '';
 
-		my %header 	= $$site{imap}->message_header( $uid, 'To', 'From', 
-													'Subject', 'Date' );
+		my %header = $$site{imap}->message_header($uid, 'To', 'From', 
+													'Subject', 'Date');
 
-		if ( ! defined $$flags{'\Seen'} ) {
-			# Force the message to remane new.
+		if (! defined $$flags{'\Seen'}) { # Force the message to remane new.
 			$$site{imap}->message_clearflag( $uid, '\Seen' );
 		}
 
+		# FIXME: Maybe everything should understand the new header hash...
+		$header{To} = $header{To}[0];
+		$header{From} = $header{From}[0];
+		$header{Subject} = $header{Subject}[0];
+		$header{Date} = $header{Date}[0];
+
 		$header{To} 	= 'Unknown Recipient' 	if ( $header{To} =~ /^\s+$/ );
-		$header{To}		= ht_qt( $header{To} );
+		$header{To}		= ht_qt($header{To});
 		my $temail 		= $header{To};
 		$temail 		=~ s/^.*\s<?(\S+@\S*?)>?\s?$/$1/;
 		$header{From} 	= 'Unknown Sender' 		if ( $header{From} =~ /^\s+$/ );
@@ -733,65 +727,61 @@ sub do_main {
 
 
 		# Subject Too long.
-		if ( $$site{max_sub} && length($header{Subject}) > $$site{max_sub} ) {
-			$header{Subject} = substr( $header{Subject}, 0, $$site{max_sub} );
+		if ($$site{max_sub} && length($header{Subject}) > $$site{max_sub}) {
+			$header{Subject} = substr($header{Subject}, 0, $$site{max_sub});
 			$header{Subject} .= '...';
 		}
 
-		my $label	= ( $sentmail ) ? $header{To} : $header{From};
-		my $reply	= ( $sentmail ) ? $temail : $email;
+		my $label	= ($sentmail) ? $header{To} : $header{From};
+		my $reply	= ($sentmail) ? $temail : $email;
 		my $sublink = "$$site{rootp}/view/$folder/$uid/$field/$order/$folder";
  
- 		if ( $draft ) {
+ 		if ($draft) {
 			$label 		= $header{To};
 			$sublink 	= "$$site{rootp}/response/draft/$folder/$uid";
 		}
 
-		push( @lines, 	ht_tr(),
-						ht_td( 	{ 'class' => 'shd' },
-								ht_checkbox( "msg_$uid", 1, $in ) ),
-						ht_td( { 'class' => 'dta' }, $flag ),
-						ht_td( { 'class' => 'dta' }, ),
-							ht_a( "$$site{rootp}/compose/$folder?to=$reply", 
-									 $label ),
-						ht_utd(),
-						ht_td( 	{ 'class' => 'dta' } ),
-								ht_a( $sublink, ht_qt( $header{Subject} ) ),
-						ht_utd(),
-						ht_td( { 'class' => 'dta' }, $header{Date} ),
-						ht_td( { 'class' => 'dta' }, $size ),
-						ht_utr() );
+		push(@lines, ht_tr(undef,
+						ht_td({ 'class' => 'shd' },
+								ht_checkbox("msg_$uid", 1, $in)),
+						ht_td({ 'class' => 'dta' }, $flag),
+						ht_td({ 'class' => 'dta' },
+							ht_a("$$site{rootp}/compose/$folder?to=$reply", 
+									$label)),
+						ht_td({ 'class' => 'dta' },
+								ht_a($sublink, ht_qt($header{Subject}))),
+						ht_td({ 'class' => 'dta' }, $header{Date}),
+						ht_td({ 'class' => 'dta' }, $size)));
 	}
 
-	if ( ! @sorted ) {
-		push( @lines, 	ht_tr(),
-						ht_td( 	{ 'colspan' => 6, 'class' => 'cdta' }, 
-								'No messages in this folder' ),
-						ht_utr() );
+	if (! @sorted) {
+		push(@lines, ht_tr(undef,
+						ht_td({ 'colspan' => 6, 'class' => 'cdta' }, 
+								'No messages in this folder')));
 	}
-	elsif ( scalar( @sorted ) > $$site{p_fcount}  ) {
+	elsif (scalar(@sorted) > $$site{p_fcount}) {
 
-		push( @lines, 	ht_tr(),
-						ht_td( { colspan => 6, 'class' => 'rshd' } ), '[' );
+		push(@lines, 	ht_tr(),
+						ht_td({ colspan => 6, 'class' => 'rshd' }), '[');
 
-		if ( $offset > 0 ) { # need previous.
-			push( @lines, ht_a( "$$site{rootp}/main/$folder/$field/$order/". 
-								( $offset - $$site{p_fcount} ), 'Previous' ) );
+		if ($offset > 0) { # need previous.
+			push(@lines, ht_a("$$site{rootp}/main/$folder/$field/$order/". 
+								($offset - $$site{p_fcount}), 'Previous'));
 		}
 
-		if ( ( $offset > 0 ) && ( ( $offset + $$site{p_fcount} ) < $count ) ) {
-			push( @lines, '|' );
+		if (($offset > 0) && (($offset + $$site{p_fcount}) < $count)) {
+			push(@lines, '|');
 		}
 
-		if ( ( $offset + $$site{p_fcount} ) < $count ) { # need next
-			push( @lines, ht_a(	"$$site{rootp}/main/$folder/$field/$order/".
-								( $offset + $$site{p_fcount} ), 'Next' ) );
+		if (($offset + $$site{p_fcount}) < $count) { # need next
+			push(@lines, ht_a("$$site{rootp}/main/$folder/$field/$order/".
+								($offset + $$site{p_fcount}), 'Next'));
 		}
 
-		push( @lines, ']', ht_utd(), ht_utr() ); 
+		push(@lines, ']', ht_utd(), ht_utr()); 
 	}
 
-	return( @lines, ht_utable(), ht_udiv(), ht_uform() );
+	return(@lines, ht_utable(), ht_udiv(), ht_uform());
 } # END $site->do_main
 
 #-------------------------------------------------
@@ -942,91 +932,86 @@ sub do_response {
 } # END $site->do_response
 
 #-------------------------------------------------
-# $site->do_view( $r, $folder, $uid, $field, $order, $header )
+# $site->do_view($r, $folder, $uid, $field, $order, $header)
 #-------------------------------------------------
 sub do_view {
-	my ( $site, $r, $folder, $uid, $field, $order, $header ) = @_;
+	my ($site, $r, $folder, $uid, $field, $order, $header) = @_;
 
-	my $in 				= $site->param( Apache2::Request->new( $r ) );
+	my $in 				= $site->param(Apache2::Request->new($r));
 	$$site{page_title} .= 'View Message';	
 
-	return( 'Invalid message.' ) if ( ! is_text( $folder ) );
-	return( 'Invalid message.' ) if ( ! is_integer( $uid ) );
-	return( 'Invalid message.' ) if ( ! is_text( $field ) );
-	return( 'Invalid message.' ) if ( ! is_integer( $order ) );
+	return('Invalid message.') if (! is_text($folder));
+	return('Invalid message.') if (! is_integer($uid));
+	return('Invalid message.') if (! is_text($field));
+	return('Invalid message.') if (! is_integer($order));
 
-	$header 	= 0 if ( ! is_integer( $header ) );
+	$header 	= 0 if (! is_integer($header));
 	my %fldrs 	= $$site{imap}->folder_list();
-	my @sorted 	= $$site{imap}->message_sort( $folder, $field, $order );
+	my @sorted 	= $$site{imap}->message_sort($folder, $field, $order);
 
 	my ( $nu, $pu, $tu );
 
-	return( 'Invalid message.' ) if ( ! @sorted );
+	return('Invalid message.') if (! @sorted);
 
-	while ( my $cuid =  shift( @sorted ) ) {
-		if ( $cuid == $uid  )  {
-			( $pu, $nu ) = ( $tu, shift( @sorted ) );
+	while (my $cuid = shift(@sorted)) {
+		if ($cuid == $uid)  {
+			($pu, $nu) = ($tu, shift(@sorted));
 			last;
 		}
 		$tu = $cuid;
 	}
 
-	my ( $next, $prev );
+	my ($next, $prev);
 
-	if ( ! defined $pu ) {
+	if (! defined $pu) {
 		$prev = "$$site{rootp}/main/$folder/$field/$order";
 	}
 	else {
 		$prev = "$$site{rootp}/view/$folder/$pu/$field/$order";
 	}
 
-	if ( ! defined $nu ) {
+	if (! defined $nu) {
 		$next = "$$site{rootp}/main/$folder/$field/$order";
 	}
 	else {
 		$next = "$$site{rootp}/view/$folder/$nu/$field/$order";
 	}
 
-	if ( $in->{move} ) { 			# Do the move
-		if ( is_text( $in->{folder} ) && defined $fldrs{$in->{folder}} ) {
+	if ($in->{move}) { 			# Do the move
+		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
+			$$site{imap}->message_move($folder, $uid, $in->{folder});
 
-			$$site{imap}->message_move( $folder, $uid, $in->{folder} );
-
-			# redirect to the next message.
-			return( $site->_relocate( $r, $next ) );
+			return($site->_relocate($r, $next)); # redirect to the next message.
 		}
 	}
 
-	if ( $in->{copy} ) {
-		if ( is_text( $in->{folder} ) && defined $fldrs{$in->{folder}} ) {
+	if ($in->{copy}) {
+		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
+			$$site{imap}->message_copy($folder, $uid, $in->{folder});
 
-			$$site{imap}->message_copy( $folder, $uid, $in->{folder} );
-
-			# redirect to the next message.
-			return( $site->_relocate( $r, $next ) );
+			return($site->_relocate($r, $next)); # redirect to the next message.
 		}
 	}
 
-	if ( $in->{delete} ) { 		# Do the delete.
+	if ($in->{delete}) { 		# Do the delete.
 		
-		$$site{p_delete} = 1 if ( $folder eq $$site{imap_trash} );
+		$$site{p_delete} = 1 if ($folder eq $$site{imap_trash});
 
-		if ( $$site{p_delete} ) {
-			$$site{imap}->message_delete( $folder, $uid );
+		if ($$site{p_delete}) {
+			$$site{imap}->message_delete($folder, $uid);
 		}
 		else {
-			$$site{imap}->message_move( $folder, $uid, $$site{imap_trash} );
+			$$site{imap}->message_move($folder, $uid, $$site{imap_trash});
 		}
 
-		return( $site->_relocate( $r, $next ) );
+		return($site->_relocate($r, $next));
 	}
 
 	# Will need to work out the next and previous messages.
 	# As well as which way we are currently sorted to know.
+	my ($chk, $mime, $msg) = $$site{imap}->message_decode($folder, $uid);
 
-	my ( $chk, $mime, $msg ) = $$site{imap}->message_decode( $folder, $uid );
-
-	return( 'Could not decode message' ) if ( ! $chk );
+	return( 'Could not decode message' ) if (! $chk);
 
 	# Headers to use.
 	my @files;
