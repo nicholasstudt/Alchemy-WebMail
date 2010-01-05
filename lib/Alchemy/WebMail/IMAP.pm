@@ -2,13 +2,14 @@ package Alchemy::WebMail::IMAP;
 
 use strict;
 
-use Encode qw( decode );
+use Encode qw(decode);
 use Mail::Cclient;
 use Mail::IMAPClient;
+use Mail::IMAPClient::BodyStructure;
 use MIME::Entity;
 use MIME::Parser;
 use Net::SMTP;
-use POSIX qw( strftime );
+use POSIX qw(strftime);
 
 use KrKit::Validate;
 
@@ -55,7 +56,7 @@ sub address_list {
 sub alive {
 	my $self = shift;
 
-	return( ( defined $self->{imap} ) ? 1 : 0 );
+	return((defined $self->{imap}) ? 1 : 0);
 } # END $imap->alive
 
 #-------------------------------------------------
@@ -76,7 +77,7 @@ sub decode_iso {
 	# Decodes UTF8 stuff in a string.
  	$string =~ s/(=\?.*\?=)/decode("MIME-Header", $1)/eg;
 
-	return( $string );
+	return($string);
 } # END $imap->decode_iso
 
 #-------------------------------------------------
@@ -345,92 +346,94 @@ sub message_copy {
 } # END $imap->message_copy
 
 #-------------------------------------------------
-# $imap->message_decode( $folder, $uid )
+# $imap->message_decode($folder, $uid)
 #-------------------------------------------------
 sub message_decode {
-	my ( $self, $folder, $uid ) = @_;
+	my ($self, $folder, $uid) = @_;
 
-	return( 0 ) if ( ! is_text( $folder ) );
-	return( 0 ) if ( ! is_integer( $uid ) );
+	return(0) if (! is_text($folder));
+	return(0) if (! is_integer($uid));
 
-	# open the folder, 
-	$self->folder_open( $folder );
+	my $body = $self->{imap}->get_bodystructure($uid);
+	my $envelope = $self->{imap}->get_envelope($uid);
 
-	my $msgno 	= $self->message_msgno( $uid );
-	my $mime 	= new MIME::Parser; 
+	return(1, $envelope, $body);
 
-	$mime->output_dir( $self->{temp} );
-	$mime->output_to_core( 0 );
-	$mime->tmp_to_core( 0 );
-	$mime->extract_nested_messages( 'REPLACE' );
-
-	# Get the decoded message and Start decoding.
-	my $entity = $mime->parse_data( $self->{imap}->fetch_message( $msgno ) );
-
-	my %msg = ( 'head' 	=> $entity->head,
-				'body'	=> $entity->bodyhandle	);
-
-	( $msg{type}, $msg{subtype} ) = split( '/', $msg{head}->mime_type );
-
-	my $print 	= ( $msg{type} =~ /^(text|message)$/ ) ? 1 : 0 ;
-	my $i 		= 0;
-
-	my @parts = $entity->parts();
-
-	for my $item ( @parts ) {
-
- 		my ( $type, $subtype ) = split( '/', $item->head->mime_type );
-
-		#warn( "Type ($i): $type / $subtype" );
-	
-		# This makes nested messages go.
-		if ( $type =~ /multipart/ ) {
-			push( @parts, $parts[$i]->parts );
-			$i++;
-			next;
-		}
-
-		if ( $type =~ /^(text|message)$/ && ! $print )  {
-
-			# Override the core one if we should. ie it's multipart
-			$msg{body} 		= $item->bodyhandle; 
-			$msg{type} 		= $type;
-			$msg{subtype} 	= $subtype;
-			$print 			= 1;
-		}
-		else { 					# Pick up the attachment info.
-			# This line makes it skip the parts added by the e-mail
-			# clients and not real attachments, the html version of
-			# things and the like. ( Or I think it would. )
-			#next if ( ! defined $item->head->recommended_filename );
-
-			$msg{attach}{$i}{name} 	= $item->head->recommended_filename;
-			$msg{attach}{$i}{type} 	= "$type/$subtype";
-			$msg{attach}{$i}{fh} 	= $item->bodyhandle; # May not exist.
-			$msg{attach}{$i}{path} 	= $item->bodyhandle->path; 
-			$msg{attach}{$i}{size}	= 0;
-
-			if ( defined $item->bodyhandle ) { 	# may not exist
-				$msg{attach}{$i}{size} = int( -s $item->bodyhandle->path );
-			}
-
-			if ( ! defined $msg{attach}{$i}{name} ) { # may not exist
-#				next if ( $subtype =~ /plain/ );
-				# drops plain text in  signed multiparts.
-
-				if ( $subtype =~ /html/ ) {
-					$msg{attach}{$i}{name} = 'View HTML Version of Message';
-				}
-				else {
-					$msg{attach}{$i}{name} = 'Unknown.'. $subtype;
-				}
-			}
-		}
-
-		$i++;
-	}
-
-	return( 1, $mime, \%msg );
+#	my $msgno 	= $self->message_msgno( $uid );
+#	my $mime 	= new MIME::Parser; 
+#
+#	$mime->output_dir( $self->{temp} );
+#	$mime->output_to_core( 0 );
+#	$mime->tmp_to_core( 0 );
+#	$mime->extract_nested_messages( 'REPLACE' );
+#
+#	# Get the decoded message and Start decoding.
+#	my $entity = $mime->parse_data( $self->{imap}->fetch_message( $msgno ) );
+#
+#	my %msg = ( 'head' 	=> $entity->head,
+#				'body'	=> $entity->bodyhandle	);
+#
+#	( $msg{type}, $msg{subtype} ) = split( '/', $msg{head}->mime_type );
+#
+#	my $print 	= ( $msg{type} =~ /^(text|message)$/ ) ? 1 : 0 ;
+#	my $i 		= 0;
+#
+#	my @parts = $entity->parts();
+#
+#	for my $item ( @parts ) {
+#
+# 		my ( $type, $subtype ) = split( '/', $item->head->mime_type );
+#
+#		#warn( "Type ($i): $type / $subtype" );
+#	
+#		# This makes nested messages go.
+#		if ( $type =~ /multipart/ ) {
+#			push( @parts, $parts[$i]->parts );
+#			$i++;
+#			next;
+#		}
+#
+#		if ( $type =~ /^(text|message)$/ && ! $print )  {
+#
+#			# Override the core one if we should. ie it's multipart
+#			$msg{body} 		= $item->bodyhandle; 
+#			$msg{type} 		= $type;
+#			$msg{subtype} 	= $subtype;
+#			$print 			= 1;
+#		}
+#		else { 					# Pick up the attachment info.
+#			# This line makes it skip the parts added by the e-mail
+#			# clients and not real attachments, the html version of
+#			# things and the like. ( Or I think it would. )
+#			#next if ( ! defined $item->head->recommended_filename );
+#
+#			$msg{attach}{$i}{name} 	= $item->head->recommended_filename;
+#			$msg{attach}{$i}{type} 	= "$type/$subtype";
+#			$msg{attach}{$i}{fh} 	= $item->bodyhandle; # May not exist.
+#			$msg{attach}{$i}{path} 	= $item->bodyhandle->path; 
+#			$msg{attach}{$i}{size}	= 0;
+#
+#			if ( defined $item->bodyhandle ) { 	# may not exist
+#				$msg{attach}{$i}{size} = int( -s $item->bodyhandle->path );
+#			}
+#
+#			if ( ! defined $msg{attach}{$i}{name} ) { # may not exist
+##				next if ( $subtype =~ /plain/ );
+#				# drops plain text in  signed multiparts.
+#
+#				if ( $subtype =~ /html/ ) {
+#					$msg{attach}{$i}{name} = 'View HTML Version of Message';
+#				}
+#				else {
+#					$msg{attach}{$i}{name} = 'Unknown.'. $subtype;
+#				}
+#			}
+#		}
+#
+#		$i++;
+#	}
+#
+#	return(1, $mime, \%msg);
 } # END $imap->message_decode
 
 #-------------------------------------------------
@@ -461,10 +464,10 @@ sub message_delete {
 } # END $imap->message_delete( $folder, $uid ) 
 
 #-------------------------------------------------
-# $imap->message_elt( $uid )
+# $imap->message_elt($uid)
 #-------------------------------------------------
 sub message_elt {
-	my ( $self, $uid ) = @_;
+	my ($self, $uid) = @_;
 
 	return(0) if (! is_integer($uid));
 
@@ -482,21 +485,12 @@ sub message_elt {
 } # END $imap->message_elt
 
 #-------------------------------------------------
-# $imap->message_header( $uid, @fields  )
+# $imap->message_header($uid, @fields)
 #-------------------------------------------------
 sub message_header {
-	my ( $self, $uid, @fields ) = @_;
-
-	my %headers;
+	my ($self, $uid, @fields) = @_;
 
 	my $headers = $self->{imap}->parse_headers($uid, @fields);
-
-#	for my $field ( @fields ) {
-#		my $hdr = $self->{imap}->fetchheader( $uid, [$field], 'uid' );
-#
-#		$hdr =~ s/$field: //;
-#		$headers{$field} = $hdr;
-#	}
 
 	return( %{$headers} );
 } # END $imap->message_header

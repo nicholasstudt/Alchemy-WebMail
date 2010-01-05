@@ -4,10 +4,10 @@ use strict;
 
 use Apache2::Request qw(); # Enables file upload.
 use Apache2::Upload;
-use Date::Manip qw( UnixDate );
+use Date::Manip qw(UnixDate);
 
 use KrKit::DB;
-use KrKit::HTML qw( :all );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
@@ -16,7 +16,7 @@ use Alchemy::WebMail;
 ############################################################
 # Variables                                                #
 ############################################################
-our @ISA = ( 'Alchemy::WebMail' );
+our @ISA = ('Alchemy::WebMail');
 
 ############################################################
 # Functions                                                #
@@ -1009,125 +1009,111 @@ sub do_view {
 
 	# Will need to work out the next and previous messages.
 	# As well as which way we are currently sorted to know.
-	my ($chk, $mime, $msg) = $$site{imap}->message_decode($folder, $uid);
-
-	return( 'Could not decode message' ) if (! $chk);
+	my ($msg);
+	
+	my ($chk, $envelope, $body) = $$site{imap}->message_decode($folder, $uid);
+	
+	return('Could not decode message') if (! $chk);
 
 	# Headers to use.
 	my @files;
-	my $from 	= $$msg{head}->get( 'From' ) 	|| 'Unknown Sender';
+	my $subject = $site->{imap}->decode_iso($envelope->subject());
+	my $date = $envelope->date();
+
+	# FIXME: Should this use the parts and display them properly?
+	my @from = $envelope->from_addresses();
+	my @to = $envelope->to_addresses();
+	my @cc = $envelope->cc_addresses();
+
+	my $from = join(', ', @from);
 	$from 		= $site->{imap}->decode_iso( $from );
-	my $subject = $$msg{head}->get( 'Subject' ) || 'No Subject';
-	$subject 	= $site->{imap}->decode_iso( $subject );
-	my $to 		= $$msg{head}->get( 'To' ) 		|| 'Unknown Recpient';
-	my $cc 		= $$msg{head}->get( 'Cc' ) 		|| '';
-	my $date 	= $$msg{head}->get( 'Date' ) 	|| '';
 
+	my ($to, $cc);
 
-	# Figure out the attachment names to list.
-	for my $fkey ( sort { $a <=> $b }  keys %{$$msg{attach}} ) {
+#	# Figure out the attachment names to list.
+#	for my $fkey ( sort { $a <=> $b }  keys %{$$msg{attach}} ) {
+#
+#		my $name = $$msg{attach}{$fkey}{name};
+#
+#		next if ( ! defined $name ); # Fix this, we are skipping attachments.
+#
+#		push( @files, ht_a( "$$site{rootp}/attached/$folder/$uid/$fkey/$name",
+#							$name, 'target="_new"' ) );
+#	}
 
-		my $name = $$msg{attach}{$fkey}{name};
+	my @folders = ('', 'Move to folder...');
+	for my $foldr (sort { ($a eq $$site{imap_inbox}) ? -1 : $a cmp $b } 
+					(keys(%fldrs))) {
+		next if ($foldr eq $folder);
 
-		next if ( ! defined $name ); # Fix this, we are skipping attachments.
-
-		push( @files, ht_a( "$$site{rootp}/attached/$folder/$uid/$fkey/$name",
-							$name, 'target="_new"' ) );
+		push(@folders, $foldr, $site->inbox_mask($foldr));
 	}
 
-	my @folders = ( '', 'Move to folder...' );
+	my @lines = ( ht_div({ 'class' => 'maction_box' }),
+					ht_form($$site{uri}),
+					ht_ul(undef,
+						ht_li(undef, ht_a( $prev, 'Prev' )),
+						ht_li(undef, ht_a( $next, 'Next' )),
 
-	for my $foldr ( sort 	{ ( $a eq $$site{imap_inbox} ) ? -1 : $a cmp $b } 
-							( keys( %fldrs ) ) ) {
+						ht_li(undef,
+							ht_a("$$site{rootp}/main/$folder/$field/$order", 
+								'Folder')),
 
-		next if ( $foldr eq $folder );
+						ht_li(undef,
+							ht_a("$$site{rootp}/response/reply/$folder/$uid",
+								'Reply')),
 
-		push( @folders, $foldr, $site->inbox_mask( $foldr ) );
-	}
+						ht_li(undef,
+							ht_a("$$site{rootp}/response/group/$folder/$uid",
+								'Reply All')),
 
-	my @lines = ( 	ht_div( { 'class' => 'maction_box' } ),
-					ht_form( $$site{uri} ),
-					'<ul>',
-						'<li>',
-						ht_a( $prev, 'Prev' ),
-						'</li>',
+						ht_li(undef,
+							ht_a("$$site{rootp}/response/fwd/$folder/$uid",
+								'Forward')),
 
-						'<li>',
-						ht_a( $next, 'Next' ),
-						'</li>',
-
-						'<li>',
-						ht_a( 	"$$site{rootp}/main/$folder/$field/$order", 
-								'Folder' ),
-						'</li>',
-
-						'<li>',
-						ht_a( 	"$$site{rootp}/response/reply/$folder/$uid",
-								'Reply' ),
-						'</li>',
-
-						'<li>',
-						ht_a( 	"$$site{rootp}/response/group/$folder/$uid",
-								'Reply All' ),
-						'</li>',
-
-						'<li>',
-						ht_a( 	"$$site{rootp}/response/fwd/$folder/$uid",
-								'Forward' ),
-						'</li>',
-
-						'<li>',
-						ht_select( 'folder', 1, '', '', '', @folders ),
-						ht_submit( 'move', 'Move' ),
-						ht_submit( 'copy', 'Copy' ),
-						ht_submit( 'delete', 'Delete' ),
-						'</li>',
-			
-					'</ul>',
+						ht_li(undef,
+								ht_select('folder', 1, '', '', '', @folders),
+								ht_submit('move', 'Move'),
+								ht_submit('copy', 'Copy'),
+								ht_submit('delete', 'Delete'))),
 					ht_uform(),
 					ht_udiv(),
 
-					ht_div( { 'class' => 'mhdr_box' } ),	
-					ht_table( { } ), 
+					ht_div({ 'class' => 'mhdr_box' }),	
+					ht_table(undef), 
 				
-					ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'From:' ),
-						ht_td( { 'class' => 'dta' },
-								$site->address_links( $from ) ),
-					ht_utr(),
+					ht_tr(undef,
+						ht_td({ 'class' => 'shd' }, 'From:'),
+						ht_td({ 'class' => 'dta' },
+								$site->address_links($from) )),
 
-					ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'To:' ),
-						ht_td( { 'class' => 'dta' }, ht_qt( $to ) ),
-					ht_utr() );
+					ht_tr(undef,
+						ht_td({ 'class' => 'shd' }, 'To:'),
+						ht_td({ 'class' => 'dta' }, ht_qt($to))) );
 
-	if ( is_text( $cc ) ) {
-		push( @lines, 	ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'Cc:' ),
-						ht_td( { 'class' => 'dta' }, ht_qt( $cc ) ),
-						ht_utr() );
+	if (is_text($cc)) {
+		push(@lines, ht_tr(undef,
+							ht_td( { 'class' => 'shd' }, 'Cc:'),
+							ht_td( { 'class' => 'dta' }, ht_qt($cc))) );
 	}
 
-	push( @lines, 	ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'Subject:' ),
-						ht_td( { 'class' => 'dta' }, ht_qt( $subject ) ),
-					ht_utr(),
+	push(@lines, 	ht_tr(undef,
+						ht_td({ 'class' => 'shd' }, 'Subject:'),
+						ht_td({ 'class' => 'dta' }, ht_qt($subject))),
 
-					ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'Date:' ),
-						ht_td( { 'class' => 'dta' }, $date ),
-					ht_utr() );
+					ht_tr(undef,
+						ht_td({ 'class' => 'shd' }, 'Date:'),
+						ht_td({ 'class' => 'dta' }, $date)) );
 
-	if ( @files ) {
-		push( @lines, 	ht_tr(),
-						ht_td( { 'class' => 'shd' }, 'Attachments:' ),
-						ht_td( { 'class' => 'dta' }, join( ht_br(), @files ) ),
-						ht_utr() );
+	if (@files) {
+		push( @lines, 	ht_tr(undef,
+						ht_td({ 'class' => 'shd' }, 'Attachments:'),
+						ht_td({ 'class' => 'dta' }, join( ht_br(), @files ))) );
 	}
 
-	push( @lines, 	ht_utable(),
+	push(@lines, ht_utable(),
 					ht_p(),
-						( ( $header ) ?
+						( ($header) ?
 						ht_a(
 						"$$site{rootp}/view/$folder/$uid/$field/$order/0", 
 						'View Standard Headers' ) :
@@ -1136,16 +1122,21 @@ sub do_view {
 					ht_up(), 
 					ht_udiv() );
 
-	if ( $header ) {
-		my $hd 	= ht_qt( $$msg{head}->as_string || '' );
-		my $br 	= ht_br();
-		$hd 	=~ s/\n/$br/g; 						# take care of \n
-		$hd 	=~ s/\t/&nbsp;&nbsp;&nbsp;&nbsp;/g; # Take care of tabs.
+	if ($header) { # View full headers.
+		my %hdrs = $site->{imap}->message_header($uid, 'ALL');
+		my @l;
 
-		push( @lines, ht_div( { 'class' => 'mhall_box' } ), $hd, ht_udiv() );
+		for my $h (sort(keys(%hdrs))) {
+			push(@l, $h.':', ht_qt(join('', @{$hdrs{$h}})), ht_br());
+		}
+
+		push(@lines, ht_div({ 'class' => 'mhall_box' }, @l));
 	}
 
-	push( @lines, ht_div( { 'class' => 'mbody_box' } ) );
+	push(@lines, ht_div({ 'class' => 'mbody_box' }));
+
+	#
+	#push(@lines, $site->{imap}->{imap}->body_string($uid));
 
 	# Get the body of the message presentable.
 	if ( $$msg{type} =~ /^(text|message)$/ ) {
@@ -1174,15 +1165,13 @@ sub do_view {
 
 		}
 
-		push( @lines, $txt );
+		push(@lines, $txt);
 	}
 	else { # just a binary attachement.
-		push( @lines, ht_b( 'No message text.' ) );
+		push(@lines, ht_b('No message text.'));
 	}
 	
-	$mime->filer->purge; # Removes the files used by the MIME tool.
-
-	return( @lines, ht_udiv() );
+	return(@lines, ht_udiv());
 } # END $site->do_view
 
 #-------------------------------------------------
