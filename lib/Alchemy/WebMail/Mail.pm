@@ -13,9 +13,6 @@ use KrKit::Validate;
 
 use Alchemy::WebMail;
 
-############################################################
-# Variables                                                #
-############################################################
 our @ISA = ('Alchemy::WebMail');
 
 ############################################################
@@ -23,129 +20,131 @@ our @ISA = ('Alchemy::WebMail');
 ############################################################
 
 #-------------------------------------------------
-# attachments_checkvals( $in, $apr )
+# $k->attachments_checkvals($in, $apr)
 #-------------------------------------------------
 sub attachments_checkvals {
-	my ( $in, $apr ) = @_;
+	my ($k, $in, $apr) = @_;
 
 	my @errors;
 
-	if ( $in->{attach} ) {
-		if ( ! is_text( $in->{newfile} ) ) {
-			push( @errors, 'Select a file to upload.'. ht_br() );
+	if ($in->{attach}) {
+		if (! is_text($in->{newfile})) {
+			push(@errors, ht_li(undef, 'Select a file to upload.'));
 		}
 		else { # Check the file size.
-			my $upload 	= $apr->upload( 'newfile' );
+			my $upload 	= $apr->upload('newfile');
 			my $size 	= $upload->size;
 
-			if ( ! defined $size || $size < 1 ) {
-				push( @errors, 'Select a file to upload.'. ht_br() );
+			if (! defined $size || $size < 1) {
+				push(@errors, ht_li(undef, 'Select a file to upload.'));
 			}
 		}
 	}
 
-	if ( $in->{remove} ) {
-		if ( ! is_text( $in->{attached} ) ) {
-			push( @errors, 'Select a file to remove.'. ht_br() );
+	if ($in->{remove}) {
+		if (! is_text($in->{attached})) {
+			push(@errors, ht_li(undef, 'Select a file to remove.'));
 		}
 	}
 
-	if ( ! $in->{attach} && ! $in->{remove} && ! $in->{submit} ) {
-		push( @errors, 'Unseen error.'. ht_br() );
+	if (! $in->{attach} && ! $in->{remove} && ! $in->{submit}) {
+		push(@errors, ht_li(undef, 'Unseen error.'));
 	}
 
-	return( @errors );
-} # END attachments_checkvals
+	if (@errors) {
+		return(ht_div({ 'class' => 'error' }, 
+						ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+	}
+
+	return();
+} # END $k->attachments_checkvals
 
 #-------------------------------------------------
-# attachments_form( $site, $in )
+# $k->attachments_form($in)
 #-------------------------------------------------
 sub attachments_form {
-	my ( $site, $in ) = @_;
+	my ($k, $in) = @_;
 
 	# Get the list of all current attachments.
-	my @files = ( '', '-- Current Attachments --' );
+	my @files = ('', '-- Current Attachments --');
 
-	if ( opendir( ATTACHMENTS, $$site{file_path} ) ) {
+	if (opendir(ATTACHMENTS, $$k{file_path})) {
 
-		while ( my $file = readdir( ATTACHMENTS ) ) {
-			next if ( $file !~ /^$$site{user}--/ );
+		while (my $file = readdir(ATTACHMENTS)) {
+			next if ($file !~ /^$$k{user}--/);
 
-			( my $name = $file ) =~ s/^.*--//;
+			(my $name = $file) =~ s/^.*--//;
 			
-			push( @files, $file, $name );
+			push(@files, $file, $name);
 		}
 
-		closedir( ATTACHMENTS );
+		closedir(ATTACHMENTS);
 	}
 
-	my $size = ( int( scalar( @files ) / 2 ) ) + 1;
+	my $size = (int(scalar(@files) / 2)) + 1;
 
-	# XXX Add how to use information.
-	return( ht_form_js( $$site{uri}, 'enctype="multipart/form-data"' ),	
-			ht_div( { 'class' => 'box' } ),
-			ht_table( {} ),
+	return(ht_form_js($$k{uri}, 'enctype="multipart/form-data"'),	
+			ht_div({ 'class' => 'box' }),
+			ht_table(undef),
 
-			ht_tr(),
-			ht_td( 	{ 'class' => 'dta' },
-					ht_input( 'newfile', 'file', $in ),
-					ht_submit( 'attach', 'Attach' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'dta' },
+					ht_input('newfile', 'file', $in),
+					ht_submit('attach', 'Attach'))),
 
 			# Select
-			ht_tr(),
-			ht_td( 	{ 'class' => 'dta' },
-					ht_select( 'attached', $size, $in, '', '', @files ),
-					ht_submit( 'remove', 'Remove' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'dta' },
+					ht_select('attached', $size, $in, '', '', @files),
+					ht_submit('remove', 'Remove'))),
 
-			ht_tr(),
-			ht_td( 	{ 'colspan' => '2', 'class' => 'rshd' }, 
-					ht_submit( 'submit', 'Back to e-mail' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
+					ht_submit('submit', 'Back to e-mail'))),
 
 			ht_utable(),
-
 			ht_udiv(),
 			ht_uform() );
-
-} # END attachments_form
+} # END $k->attachments_form
 
 #-------------------------------------------------
-# compose_checkvals( $in )
+# $k->compose_checkvals($in)
 #-------------------------------------------------
 sub compose_checkvals {
-	my $in = shift;
+	my ($k, $in) = @_;
 
 	my @errors;
 
-	if ( ! is_integer( $in->{role} ) ) {
-		push( @errors, 'Select a role to use.'. ht_br() );
+	if (! is_integer($in->{role})) {
+		push(@errors, 'Select a role to use.');
 	}
 
-	if ( ! is_email( $in->{to} ) ) {
-		push( @errors, 'Enter a valid "To" e-mail address.'. ht_br() );
+	if (! is_email($in->{to})) {
+		push(@errors, 'Enter a valid "To" e-mail address.');
 	}
 
-	if ( ! is_text( $in->{message} ) ) {
-		push( @errors, 'Enter a message for this e-mail.'. ht_br() );
+	if (! is_text($in->{message})) {
+		push(@errors, 'Enter a message for this e-mail.');
 	}
 
-	return( @errors );
+	if (@errors) {
+		return(ht_div({ 'class' => 'error' }, 
+						ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+	}
 } # END compose_checkvals
 
 #-------------------------------------------------
-# compose_form( $site, $in )
+# $k->compose_form($in)
 #-------------------------------------------------
 sub compose_form {
-	my ( $site, $in ) = @_;
+	my ( $k, $in ) = @_;
 
 	my ( @roles, @files, @sigs );
 
-	my $sth = db_query( $$site{dbh}, 'get roles list',
+	my $sth = db_query( $$k{dbh}, 'get roles list',
 						'SELECT id, main_role, role_name, reply_to, ',
 						' signature FROM wm_roles WHERE wm_user_id = ', 
-						sql_num( $$site{user_id} ), 'ORDER BY role_name' );
+						sql_num( $$k{user_id} ), 'ORDER BY role_name' );
 
 	while ( my ( $id, $def, $name, $email, $sig ) = db_next( $sth ) ) {
 		push( @roles, $id, "$name &lt;$email&gt;" );
@@ -161,10 +160,10 @@ sub compose_form {
 
 	db_finish( $sth );
 
-	if ( opendir( ATTACHMENTS, $$site{file_path} ) ) {
+	if ( opendir( ATTACHMENTS, $$k{file_path} ) ) {
 
 		while ( my $file = readdir( ATTACHMENTS ) ) {
-			next if ( $file !~ /^$$site{user}--/ );
+			next if ( $file !~ /^$$k{user}--/ );
 
 			( my $name = $file ) =~ s/^.*--//; # Get out the filename
 			
@@ -174,9 +173,9 @@ sub compose_form {
 		closedir( ATTACHMENTS );
 	}
 
-	my $sigcode = '	sigs = new Array( '. join( ', ', @sigs ).')';
+	my $sigcode = '	sigs = new Array( '. join(', ', @sigs).')';
 
-	return( ht_form_js( $$site{uri}, 'name="compose"' ),	
+	return( ht_form_js($$k{uri}, 'name="compose"'),	
 
 			q!<script type="text/javascript">!,
 
@@ -196,7 +195,7 @@ sub compose_form {
 			q! } !,
 
 			q! 	function addrpop(n) { !,
-			qq! 	window.open('$$site{address_root}/list/'+n, 'short',!,
+			qq! 	window.open('$$k{address_root}/list/'+n, 'short',!,
 			q! 					'height=550,width=350,scrollbars,resizable');!,
 			q! 	} !,
 
@@ -225,331 +224,298 @@ sub compose_form {
 
 			q!</script>!,
 
-			ht_div( { 'class' => 'box' } ),
-			ht_table( {} ),
+			ht_div({ 'class' => 'box' }),
+			ht_table(undef),
 
 			# From ( role )
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'From' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					ht_select( 	'role', 1, $in, '', '', @roles ),
-					'[', ht_a( 'javascript:addsig()', 'Add Signature' ), ']',
-					),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'From'),
+				ht_td({ 'class' => 'dta' }, 
+					ht_select('role', 1, $in, '', '', @roles),
+					'[', ht_a('javascript:addsig()', 'Add Signature'), ']')),
 
 			# To
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'To' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					ht_input( 'to', 'text', $in, 'size="45"' ), 
-					ht_a( 'javascript:addrpop(\'to\')', $$site{addr_icon} ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'To'),
+				ht_td({ 'class' => 'dta' }, 
+					ht_input('to', 'text', $in, 'size="45"'), 
+					ht_a('javascript:addrpop(\'to\')', $$k{addr_icon}))),
 
 			# CC
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Cc' ),
-			ht_td( { 'class' => 'dta' }, 
-					ht_input( 'cc', 'text', $in, 'size="45"' ),
-					ht_a( 'javascript:addrpop(\'cc\')', $$site{addr_icon} ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Cc'),
+				ht_td({ 'class' => 'dta' }, 
+					ht_input('cc', 'text', $in, 'size="45"'),
+					ht_a('javascript:addrpop(\'cc\')', $$k{addr_icon}))),
 
 			# BCC
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Bcc' ),
-			ht_td( 	{ 'class' => 'dta' }, 	
-					ht_input( 'bcc', 'text', $in, 'size="45"' ),
-					ht_a( 'javascript:addrpop(\'bcc\')', $$site{addr_icon} ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Bcc'),
+				ht_td({ 'class' => 'dta' }, 	
+					ht_input('bcc', 'text', $in, 'size="45"'),
+					ht_a('javascript:addrpop(\'bcc\')', $$k{addr_icon}))),
 
 			# Subject
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Subject' ),
-			ht_td( 	{ 'class' => 'dta' },
-					ht_input( 'subject', 'text', $in, 'size="50"' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Subject'),
+				ht_td({ 'class' => 'dta' },
+					ht_input('subject', 'text', $in, 'size="50"'))),
 
 			# Attachments
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Attachments' ),
-			ht_td( 	{ 'class' => 'dta' },
-					( @files ) ? @files : 'No attachments' ,
-					ht_submit( 'attach', 'Attachments' ), ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Attachments'),
+				ht_td({ 'class' => 'dta' },
+					(@files) ? @files : 'No attachments',
+					ht_submit('attach', 'Attachments'))),
 
 			# Text
-			ht_tr(),
-			ht_td( 	{ colspan => 2, 'class' => 'dta' },  
-					'Message', 
-					ht_br(),
-					ht_input( 	'message', 'textarea', $in, 
-								'cols="75" rows="20"' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ colspan => 2, 'class' => 'dta' }, 
+					'Message', ht_br(),
+					ht_input('message', 'textarea', $in, 
+								'cols="75" rows="20"'))),
 
-			ht_tr(),
-			ht_td( 	{ 'colspan' => '2', 'class' => 'rshd' }, 
+			ht_tr(undef,
+				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
 					ht_submit( 'submit', 'Send' ),
 					ht_submit( 'draft', 'Save Draft' ),
-					ht_submit( 'cancel', 'Cancel' ) ),
-			ht_utr(),
+					ht_submit( 'cancel', 'Cancel' ) )),
 
 			ht_utable(),
-
 			ht_udiv(),
 			ht_uform() );
-} # END compose_form
+} # END $k->compose_form
 
 #-------------------------------------------------
-# $site->do_attached( $r, $folder, $uid, $part )
+# $k->do_attached( $r, $folder, $uid, $part )
 #-------------------------------------------------
 sub do_attached {
-	my ( $site, $r, $folder, $uid, $part ) = @_;
+	my ( $k, $r, $folder, $uid, $part ) = @_;
 
-	return( 'Invalid folder.' ) 		if ( ! is_text( $folder ) );
-	return( 'Invalid message.' ) 		if ( ! is_integer( $uid ) );
-	return( 'Inavlie message part.' ) 	if ( ! is_integer( $part ) );
+	return('Invalid folder.') 		if (! is_text($folder));
+	return('Invalid message.') 		if (! is_integer($uid));
+	return('Inavlie message part.') if (! is_integer($part));
 	
-	my ( $chk, $mime, $msg ) = $$site{imap}->message_decode( $folder, $uid );
+	my ($chk, $mime, $msg) = $$k{imap}->message_decode($folder, $uid);
 
-	return( 'Could not decode message' ) if ( ! $chk );
+	return('Could not decode message') if ( ! $chk );
 	
-	$$site{frame} = 'none'; # So we don't frame output.
+	$$k{frame} = 'none'; # So we don't frame output.
 
 	my $fh 				= $$msg{attach}{$part}{fh};
-	$$site{contenttype} = $$msg{attach}{$part}{type};
-	$$site{body_file} 	= $$msg{attach}{$part}{path};
+	$$k{contenttype} = $$msg{attach}{$part}{type};
+	$$k{body_file} 	= $$msg{attach}{$part}{path};
 
-	#$mime->filer->purge; # Removes the files used by the MIME tool.
-
-	return( 'Get Attachment.' );
-} # END $site->do_attached
+	return('Get Attachment.');
+} # END $k->do_attached
 
 #-------------------------------------------------
-# $site->do_attachments( $r, $dfolder, $folder, $uid )
+# $k->do_attachments($r, $dfolder, $folder, $uid)
 #-------------------------------------------------
 sub do_attachments {
-	my ( $site, $r, $dfolder, $folder, $uid ) = @_;
+	my ($k, $r, $dfolder, $folder, $uid) = @_;
 
-	return( 'Invalid draft folder.' ) 	if ( ! is_text( $dfolder ) );
-	return( 'Invalid folder.' ) 		if ( ! is_text( $folder ) );
-	return( 'Invalid msg_id.' ) 		if ( ! is_integer( $uid ) );
+	return('Invalid draft folder.') if (! is_text($dfolder));
+	return('Invalid folder.') 		if (! is_text($folder));
+	return('Invalid msg_id.') 		if (! is_integer($uid));
 
-	my $apr    	= Apache2::Request->new( $r, TEMP_DIR => $$site{file_tmp} );
-#                                            POST_MAX => $$site{file_max} );
+	my $apr = Apache2::Request->new($r, TEMP_DIR => $$k{file_tmp});
+#                                       POST_MAX => $$k{file_max});
 #    my $status  = $apr->parse;
 #    return( 'Error: Upload File too large.' ) if ( $status );
                                                                                 
-    # The in hash ;)
-	my $in 				= $site->param( $apr );
-	$$site{page_title}	.= 'Manage attachments';
+	my $in = $k->param($apr); # The in hash ;)
+	$$k{page_title}	.= 'Manage attachments';
 
-	if ( ! ( my @errors = attachments_checkvals( $in, $apr ) ) ) {
-
-		if ( $in->{attach} ) {	# Actually Save the file to disk.
-
-			my $now 			= time;
-			my $upload 			= $apr->upload( 'newfile' );
-			my $type 			= $upload->type();
-			$type 				=~ s/\//_/g;
-			my ( $t, $fname )   = $upload->filename =~ /^(.*\\|.*\/)?(.*?)?$/;
-			$fname 				=~ s/--/-/g; # Make it marker safe.
-
-			# Attach_path/$now-$uname-$type-$fname
-			my $file = "$$site{file_path}/$$site{user}--$now--$type--$fname";
-			
-			if ( open( ATTACH, ">$file" ) ) {
-
-				my $fh = $upload->fh;
-
-				while ( my $part = <$fh> ) {
-					print ATTACH $part;
-				}
-
-				close( ATTACH );
-			}
-			else {
-				die "Could not open $file: $!";
-			}
-
-			$in->{newfile} = '';
-			
-			return( attachments_form( $site, $in ) );
-		}
-
-		if ( $in->{remove} ) { # Actually remove a file.
-
-			if ( ! unlink( "$$site{file_path}/$in->{attached}" ) ) {
-				die "Can not remove $in->{attached}: $!";
-			}
-		
-			return( attachments_form( $site, $in ) );
-		}
-
-		# Send them to the compose draft page to pick up on the old message.
-		return( $site->_relocate( $r, 	"$$site{rootp}/response/draft/$folder".
-										"/$uid/$$site{imap_drafts}" ) );
+	# Show the form or errors as needed.
+	if (my @err = $k->attachments_checkvals($in, $apr)) {
+		return(($r->method eq 'POST' ? @err : ''), $k->attachments_form($in));
 	}
-	else {
-		if ( $r->method eq 'POST' ) {
-			return( @errors, attachments_form( $site, $in ) );
+
+	if ($in->{attach}) {	# Actually Save the file to disk.
+		my $now 			= time;
+		my $upload 			= $apr->upload('newfile');
+		my $type 			= $upload->type();
+		$type 				=~ s/\//_/g;
+		my ( $t, $fname )   = $upload->filename =~ /^(.*\\|.*\/)?(.*?)?$/;
+		$fname 				=~ s/--/-/g; # Make it marker safe.
+
+		# Attach_path/$now-$uname-$type-$fname
+		my $file = "$$k{file_path}/$$k{user}--$now--$type--$fname";
+		
+		if ( open( ATTACH, ">$file" ) ) {
+			my $fh = $upload->fh;
+
+			while ( my $part = <$fh> ) {
+				print ATTACH $part;
+			}
+
+			close( ATTACH );
 		}
 		else {
-			return( attachments_form( $site, $in ) );
+			die "Could not open $file: $!";
 		}
+
+		$in->{newfile} = '';
+		
+		return($k->attachments_form($in));
 	}
-} # END $site->do_attachments
+
+	if ($in->{remove}) { # Actually remove a file.
+		if (! unlink("$$k{file_path}/$in->{attached}")) {
+			die "Can not remove $in->{attached}: $!";
+		}
+		return($k->attachments_form($in));
+	}
+
+	# Send them to the compose draft page to pick up on the old message.
+	return($k->_relocate($r,
+				"$$k{rootp}/response/draft/$folder/$uid/$$k{imap_drafts}"));
+} # END $k->do_attachments
 
 #-------------------------------------------------
-# $site->do_compose( $r, $folder, $uid )
+# $k->do_compose( $r, $folder, $uid )
 #-------------------------------------------------
 sub do_compose {
-	my ( $site, $r, $folder, $uid ) = @_;
+	my ( $k, $r, $folder, $uid ) = @_;
 
 	my $apr 			= Apache2::Request->new( $r );
-	my $in 				= $site->param( $apr );
+	my $in 				= $k->param( $apr );
 
-	$$site{page_title}	.= 'Compose message';
-	$folder 			= $$site{imap_inbox} 	if ( ! defined $folder );
+	$$k{page_title}	.= 'Compose message';
+	$folder 			= $$k{imap_inbox} 	if ( ! defined $folder );
  
  	if ( $in->{cancel} ) {
-		return( $site->_relocate( $r, "$$site{rootp}/main/$folder" ) );
+		return( $k->_relocate( $r, "$$k{rootp}/main/$folder" ) );
 	}
 
 	if ( $in->{draft} ) {
 		$in->{want_sig} = 0; # Kill the sig on a draft.
 
 		# Set the from address correctly.
-		my ( $name, $from, $sentmail, $sig ) = $site->role_info( $in->{role} );	
-		$in->{from}	= ( is_text( $name ) ) ? "\"$name\" <$from>" : $from;
+		my ($name, $from, $sentmail, $sig) = $k->role_info($in->{role});	
+		$in->{from}	= (is_text($name)) ? "\"$name\" <$from>" : $from;
 
 		# Save to the drafts folder.
-		my ( $message, $attach ) = $$site{imap}->message_mime( $site, $in );
+		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in );
 	
 		# What about the From address ?
-		$$site{imap}->message_append( $$site{imap_drafts}, $message, '\Seen' );
+		$$k{imap}->message_append( $$k{imap_drafts}, $message, '\Seen' );
 
 		# Unlink the files since they have been put in the draft.
 		for my $file ( @{$attach} ) {
 			unlink( $file );
 		}
 
-		return( $site->_relocate( $r, "$$site{rootp}/main/$folder" ) );
+		return( $k->_relocate( $r, "$$k{rootp}/main/$folder" ) );
 	}
 
 	if ( $in->{attach} ) {
 		$in->{want_sig} = 0; # Kill the sig on a draft.
 		
 		# Set the from address correctly.
-		my ( $name, $from, $sentmail, $sig ) = $site->role_info( $in->{role} );	
-		$in->{from}	= ( is_text( $name ) ) ? "\"$name\" <$from>" : $from;
+		my ($name, $from, $sentmail, $sig) = $k->role_info($in->{role});	
+		$in->{from}	= (is_text($name)) ? "\"$name\" <$from>" : $from;
 
-		my ( $message, $attach ) = $$site{imap}->message_mime( $site, $in, 0 );
+		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in, 0 );
 	
-		my $uid = $$site{imap}->message_append( $$site{imap_drafts}, 
-												$message, '\Draft' );
+		my $uid = $$k{imap}->message_append($$k{imap_drafts}, 
+												$message, '\Draft');
 
-		return( $site->_relocate( $r, 
-			"$$site{rootp}/attachments/$$site{imap_drafts}/$folder/$uid" ) );
+		return( $k->_relocate( $r, 
+			"$$k{rootp}/attachments/$$k{imap_drafts}/$folder/$uid" ) );
 	}
 
-	if ( ! ( my @errors = compose_checkvals( $in ) ) ) {
+	if (! (my @errors = $k->compose_checkvals($in))) {
 
 		# Look up the role information.
-		my ( $name, $from, $sentmail, $sig ) = $site->role_info( $in->{role} );	
+		my ( $name, $from, $sentmail, $sig ) = $k->role_info( $in->{role} );	
 		$in->{from}	= ( is_text( $name ) ) ? "\"$name\" <$from>" : $from;
 		$in->{sig} 	= $sig;
 
 		# Generate the email content
-		my ( $message, $attach ) = $$site{imap}->message_mime( $site, $in );
+		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in );
 
 		# Send the email.
-		if ( ! $$site{imap}->message_send( $site, $message ) ) {
-			return( 'Unable to send message: '. $$site{imap}->error() );
+		if ( ! $$k{imap}->message_send( $k, $message ) ) {
+			return( 'Unable to send message: '. $$k{imap}->error() );
 		}
 
 		# Figure out if I need to save the sentmail.
-		$$site{imap}->message_append( $sentmail, $message, '\Seen' );
+		$$k{imap}->message_append( $sentmail, $message, '\Seen' );
 
 		if ( is_number( $uid ) ) {
-			$$site{imap}->message_setflag( $folder, $uid, '\Answered' );
+			$$k{imap}->message_setflag( $folder, $uid, '\Answered' );
 		}
 
 		for my $file ( @{$attach} ) {
 			unlink( $file );
 		}
 
-		return( $site->_relocate( $r, "$$site{rootp}/main/$folder" ) );
+		return($k->_relocate($r, "$$k{rootp}/main/$folder"));
 	}
 	else {
-		if ( $r->method eq 'POST' ) {
-			return( @errors, compose_form( $site, $in ) );
-		}
-		else {
-			return( compose_form( $site, $in ) );
-		}
+		return(($r->method eq 'POST' ? @errors : ''), $k->compose_form($in));
 	}
-} # END $site->do_compose
+} # END $k->do_compose
 
 #-------------------------------------------------
-# $site->do_delete( $r, $folder $yes )
+# $k->do_delete($r, $folder $yes)
 #-------------------------------------------------
 sub do_delete {
-	my ( $site, $r, $folder, $yes ) = @_;
+	my ($k, $r, $folder, $yes) = @_;
 
 	# confirm then delete all messages in the trash.
-	my $in 				= $site->param( Apache2::Request->new( $r ) );
-	$folder 			= $$site{imap_trash} if ( ! is_text( $folder ) );
-	$$site{page_title} 	.= "Empty $folder";
+	my $in 				= $k->param(Apache2::Request->new($r));
+	$folder 			= $$k{imap_trash} if (! is_text($folder));
+	$$k{page_title} 	.= "Empty $folder";
 
-	return( $site->_relocate( $r, $$site{rootp} ) ) if ( defined $in->{cancel} );
+	return($k->_relocate($r, $$k{rootp})) if (defined $in->{cancel});
 
-	if ( ( defined $yes ) && ( $yes eq 'yes' ) ) {
+	if ((defined $yes) && ($yes eq 'yes')) {
 
 		# Empty the folder
-		my @sorted 	= $$site{imap}->message_sort( 	$folder, $$site{p_sfield}, 
-													$$site{p_sorder} );
+		my @sorted 	= $$k{imap}->message_sort($folder, $$k{p_sfield}, 
+													$$k{p_sorder});
 
-		for my $uid ( @sorted ) {
-			next if ( ! defined $uid );
-			$$site{imap}->message_delete( $folder, $uid );
+		for my $uid (@sorted) {
+			next if (! defined $uid);
+			$$k{imap}->message_delete($folder, $uid);
 		}
 
-		return( $site->_relocate( $r, $$site{rootp} ) );
+		return($k->_relocate($r, $$k{rootp}));
 	}
-	else {
-		return( ht_form_js( "$$site{rootp}/delete/$folder/yes" ), 
-				ht_div( { 'class' => 'box' } ),
-				ht_table( { } ),
-				ht_tr(),
-					ht_td( 	{ 'class' => 'dta' },
-							qq!Delete all messages from the "$folder"!, 
-							q!folder ?! ),
-				ht_utr(),
-				ht_tr(),
-					ht_td( { 'class' => 'rshd' }, 
-							ht_submit( 'submit', 'Continue with Delete' ),
-							ht_submit( 'cancel', 'Cancel' ) ),
-				ht_utr(),
-				ht_utable(),
-				ht_udiv(),
-				ht_uform() );
-	}
-} # END $site->do_empty_trash
+
+	return( ht_form_js("$$k{rootp}/delete/$folder/yes"), 
+			ht_div({ 'class' => 'box' }),
+			ht_table(undef),
+			ht_tr(undef,
+				ht_td({ 'class' => 'dta' },
+						qq!Delete all messages from the "$folder" folder?!)),
+			ht_tr(undef,
+				ht_td({ 'class' => 'rshd' }, 
+					ht_submit('submit', 'Continue with Delete'),
+					ht_submit('cancel', 'Cancel'))),
+			ht_utable(),
+			ht_udiv(),
+			ht_uform() );
+} # END $k->do_empty_trash
 
 #-------------------------------------------------
-# $site->do_main($r, $folder, $field, $order)
+# $k->do_main($r, $folder, $field, $order)
 #-------------------------------------------------
 sub do_main {
-	my ($site, $r, $folder, $field, $order, $offset) = @_;
+	my ($k, $r, $folder, $field, $order, $offset) = @_;
 
 	my %ln; # Links for the headers.
-	my $in 				= $site->param( Apache2::Request->new($r) );
-	$folder 			= $$site{imap_inbox} 	if (! is_text($folder));
-	$field 				= $$site{p_sfield} 		if (! is_text($field));
-	$order 				= $$site{p_sorder} 		if (! is_integer($order));
+	my $in 				= $k->param( Apache2::Request->new($r) );
+	$folder 			= $$k{imap_inbox} 	if (! is_text($folder));
+	$field 				= $$k{p_sfield} 		if (! is_text($field));
+	$order 				= $$k{p_sorder} 		if (! is_integer($order));
 	$offset 			= 0 					if (! is_integer($offset));
-	$$site{page_title} 	.= $site->inbox_mask($folder). ' view';
-	my $draft 			= ($folder eq $$site{imap_drafts}) ? 1 : 0;
-	my $sentmail		= ($folder eq $$site{imap_sent}) ? 1 : 0;
+	$$k{page_title} 	.= $k->inbox_mask($folder). ' view';
+	my $draft 			= ($folder eq $$k{imap_drafts}) ? 1 : 0;
+	my $sentmail		= ($folder eq $$k{imap_sent}) ? 1 : 0;
 
 	# Really, don't try to read the Javascript, it's better that way ;)
 	my $clkjs = 	q!onClick="var e, i=0, o=document.fldr; while (e=o[i++]) !.
@@ -557,14 +523,14 @@ sub do_main {
 
 	my @lines;
 	my @folders = ('', 'Move to folder...');
-	my %fldrs 	= $$site{imap}->folder_list();
+	my %fldrs 	= $$k{imap}->folder_list();
 
-	for my $foldr (sort	{ ($a eq $$site{imap_inbox}) ? -1 : $a cmp $b } 
+	for my $foldr (sort	{ ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b } 
 						(keys(%fldrs))) {
 		
 		next if ($foldr eq $folder);
 
-		push(@folders, $foldr, $site->inbox_mask($foldr));
+		push(@folders, $foldr, $k->inbox_mask($foldr));
 	}
 
 	if ($in->{move}) { 			# Do the move
@@ -574,7 +540,7 @@ sub do_main {
 			for my $msg (keys(%$in)) {
 				next if ($msg !~ /^msg_/);
 				(my $muid = $msg) =~ s/^msg_//;
-				$count += $$site{imap}->message_move($folder, $muid, 
+				$count += $$k{imap}->message_move($folder, $muid, 
 														$in->{folder});
 			}
 
@@ -589,7 +555,7 @@ sub do_main {
 			for my $msg (keys(%$in)) {
 				next if ($msg !~ /^msg_/);
 				(my $muid = $msg) =~ s/^msg_//;
-				$count += $$site{imap}->message_copy($folder, $muid, 
+				$count += $$k{imap}->message_copy($folder, $muid, 
 														$in->{folder});
 			}
 
@@ -601,29 +567,29 @@ sub do_main {
 		my $count = 0;
 
 		# Force delete in the trash bin.
-		$$site{p_delete} = 1 if ($folder eq $$site{imap_trash});
+		$$k{p_delete} = 1 if ($folder eq $$k{imap_trash});
 
 		for my $msg (keys(%$in)) {
 			next if ($msg !~ /^msg_/);
 			(my $muid = $msg) =~ s/^msg_//;
 		
-			if ($$site{p_delete}) {
-				$count += $$site{imap}->message_delete($folder, $muid);
+			if ($$k{p_delete}) {
+				$count += $$k{imap}->message_delete($folder, $muid);
 			}
 			else {
-				$count += $$site{imap}->message_move($folder, $muid, 
-														$$site{imap_trash});
+				$count += $$k{imap}->message_move($folder, $muid, 
+														$$k{imap_trash});
 			}
 		}
 
 		push(@lines, 
 			"$count message(s) ". 
-			($$site{p_delete} ? 'deleted.' : "moved to $$site{imap_trash}."));
+			($$k{p_delete} ? 'deleted.' : "moved to $$k{imap_trash}."));
 	}
 
 	# Work out the header links.
 	for my $fld ('to', 'from', 'subject', 'date', 'size') {
-		my $root = "$$site{rootp}/main/$folder";
+		my $root = "$$k{rootp}/main/$folder";
 
 		if ($field =~ /$fld/i) {
 			$ln{$fld} = ($order) ? "$root/$fld/0" : "$root/$fld/1";
@@ -635,12 +601,12 @@ sub do_main {
 
 	# Get the message order, and count stuff.
 	my $count 	= 0;
-	my @sorted 	= $$site{imap}->message_sort($folder, $field, $order);
+	my @sorted 	= $$k{imap}->message_sort($folder, $field, $order);
 	my $total 	= scalar(@sorted);
-	my $ptotal 	= $$site{p_fcount} + $offset;
+	my $ptotal 	= $$k{p_fcount} + $offset;
 	my $mtotal 	= ($ptotal > $total) ? $total: $ptotal;
 
-	push(@lines,  	ht_form_js($$site{uri}, 'name="fldr"'),	
+	push(@lines,  	ht_form_js($$k{uri}, 'name="fldr"'),	
 					ht_div({ 'class' => 'box' }),
 					ht_table(undef),
 
@@ -682,19 +648,19 @@ sub do_main {
 		$count++;
 
 		next if ($count <= $offset);
-		last if ($count > ($$site{p_fcount} + $offset));
+		last if ($count > ($$k{p_fcount} + $offset));
 	
-		my ($size, $flags) = $$site{imap}->message_elt($uid);
+		my ($size, $flags) = $$k{imap}->message_elt($uid);
 
 		# \Answered means it has been replied to.
-		my $flag = (defined $$flags{'\Seen'}) ? '' : $$site{new_icon};
-		$flag 	.= (defined $$flags{'\Answered'}) ? $$site{reply_icon} : '';
+		my $flag = (defined $$flags{'\Seen'}) ? '' : $$k{new_icon};
+		$flag 	.= (defined $$flags{'\Answered'}) ? $$k{reply_icon} : '';
 
-		my %header = $$site{imap}->message_header($uid, 'To', 'From', 
+		my %header = $$k{imap}->message_header($uid, 'To', 'From', 
 													'Subject', 'Date');
 
 		if (! defined $$flags{'\Seen'}) { # Force the message to remane new.
-			$$site{imap}->message_clearflag( $uid, '\Seen' );
+			$$k{imap}->message_clearflag( $uid, '\Seen' );
 		}
 
 		# FIXME: Maybe everything should understand the new header hash...
@@ -711,7 +677,7 @@ sub do_main {
 		$header{From} 	=~ s/From:.*$//s 		if ( $header{From} =~ /From/ );
 		$header{From}	=~ s/\n|\r//g;
 
-		my $email 		= $site->{imap}->decode_iso( $header{From} );
+		my $email 		= $k->{imap}->decode_iso( $header{From} );
 		my $name 		= $email;
 		$email 			=~ s/^.*\s<?(\S+@\S*?)>?\s?$/$1/;
 		$name 			=~ s/^"?(.*?)"?\s?<?\S+@\S+/$1/;
@@ -720,25 +686,25 @@ sub do_main {
 	
 		# Clean up the date field.
 		$header{Date} 		=~ s/^...\,//; # Strip off the day
-		$header{Date}		= UnixDate( $header{Date}, $$site{fmt_dt} ) || '';
+		$header{Date}		= UnixDate($header{Date}, $$k{fmt_dt}) || '';
 		$header{Subject} 	= 'No Subject' 	if ( ! defined $header{Subject} );
 		$header{Subject} 	= 'No Subject' 	if ( $header{Subject} =~ /^\s+$/ );
-		$header{Subject} 	= $site->{imap}->decode_iso( $header{Subject} );
+		$header{Subject} 	= $k->{imap}->decode_iso( $header{Subject} );
 
 
 		# Subject Too long.
-		if ($$site{max_sub} && length($header{Subject}) > $$site{max_sub}) {
-			$header{Subject} = substr($header{Subject}, 0, $$site{max_sub});
+		if ($$k{max_sub} && length($header{Subject}) > $$k{max_sub}) {
+			$header{Subject} = substr($header{Subject}, 0, $$k{max_sub});
 			$header{Subject} .= '...';
 		}
 
 		my $label	= ($sentmail) ? $header{To} : $header{From};
 		my $reply	= ($sentmail) ? $temail : $email;
-		my $sublink = "$$site{rootp}/view/$folder/$uid/$field/$order/$folder";
+		my $sublink = "$$k{rootp}/view/$folder/$uid/$field/$order/$folder";
  
  		if ($draft) {
 			$label 		= $header{To};
-			$sublink 	= "$$site{rootp}/response/draft/$folder/$uid";
+			$sublink 	= "$$k{rootp}/response/draft/$folder/$uid";
 		}
 
 		push(@lines, ht_tr(undef,
@@ -746,7 +712,7 @@ sub do_main {
 								ht_checkbox("msg_$uid", 1, $in)),
 						ht_td({ 'class' => 'dta' }, $flag),
 						ht_td({ 'class' => 'dta' },
-							ht_a("$$site{rootp}/compose/$folder?to=$reply", 
+							ht_a("$$k{rootp}/compose/$folder?to=$reply", 
 									$label)),
 						ht_td({ 'class' => 'dta' },
 								ht_a($sublink, ht_qt($header{Subject}))),
@@ -759,48 +725,48 @@ sub do_main {
 						ht_td({ 'colspan' => 6, 'class' => 'cdta' }, 
 								'No messages in this folder')));
 	}
-	elsif (scalar(@sorted) > $$site{p_fcount}) {
+	elsif (scalar(@sorted) > $$k{p_fcount}) {
 
 		push(@lines, 	ht_tr(),
 						ht_td({ colspan => 6, 'class' => 'rshd' }), '[');
 
 		if ($offset > 0) { # need previous.
-			push(@lines, ht_a("$$site{rootp}/main/$folder/$field/$order/". 
-								($offset - $$site{p_fcount}), 'Previous'));
+			push(@lines, ht_a("$$k{rootp}/main/$folder/$field/$order/". 
+								($offset - $$k{p_fcount}), 'Previous'));
 		}
 
-		if (($offset > 0) && (($offset + $$site{p_fcount}) < $count)) {
+		if (($offset > 0) && (($offset + $$k{p_fcount}) < $count)) {
 			push(@lines, '|');
 		}
 
-		if (($offset + $$site{p_fcount}) < $count) { # need next
-			push(@lines, ht_a("$$site{rootp}/main/$folder/$field/$order/".
-								($offset + $$site{p_fcount}), 'Next'));
+		if (($offset + $$k{p_fcount}) < $count) { # need next
+			push(@lines, ht_a("$$k{rootp}/main/$folder/$field/$order/".
+								($offset + $$k{p_fcount}), 'Next'));
 		}
 
 		push(@lines, ']', ht_utd(), ht_utr()); 
 	}
 
 	return(@lines, ht_utable(), ht_udiv(), ht_uform());
-} # END $site->do_main
+} # END $k->do_main
 
 #-------------------------------------------------
-# $site->do_response( $r, $type, $folder, $uid, $dfolder )
+# $k->do_response( $r, $type, $folder, $uid, $dfolder )
 #-------------------------------------------------
 sub do_response {
-	my ( $site, $r, $type, $folder, $uid ) = @_;
+	my ( $k, $r, $type, $folder, $uid ) = @_;
 
-	my $in 				= $site->param( Apache2::Request->new( $r ) );
-	$$site{page_title} .= 'Compose message';
+	my $in 				= $k->param( Apache2::Request->new( $r ) );
+	$$k{page_title} .= 'Compose message';
 	
 	return( 'Invalid type.' ) 		if ( ! is_text( $type ) );
 	return( 'Invalid folder.' )		if ( ! is_text( $folder ) );
 	return( 'Invalid message.' ) 	if ( ! is_integer( $uid ) );
 
 	# $dfolder is the folder to decode the message from.
-	my $dfolder = ( $type =~ /^draft$/ ) ? $$site{imap_drafts} : $folder;
+	my $dfolder = ( $type =~ /^draft$/ ) ? $$k{imap_drafts} : $folder;
 
-	my ( $chk, $mime, $msg ) = $$site{imap}->message_decode( $dfolder, $uid );
+	my ( $chk, $mime, $msg ) = $$k{imap}->message_decode( $dfolder, $uid );
 	
 	return( 'Could not decode message' ) if ( ! $chk );
 
@@ -821,7 +787,7 @@ sub do_response {
 		$txt 			=~ s/^/> /mg;
 		$in->{to} 		=~ s/\s+$//;
 		$in->{message}	= '';
-		$in->{message} 	= "> $in->{to} wrote: \n>\n".$txt if ( $$site{p_reply} );
+		$in->{message} 	= "> $in->{to} wrote: \n>\n".$txt if ( $$k{p_reply} );
 
 		if ( $type =~ /group/ ) { 						# reply all
 
@@ -838,8 +804,7 @@ sub do_response {
 		}
 	}
 	elsif ( $type =~ /^new$/i ) { 						# New email
-		
-		if ( $dfolder =~ /^$$site{imap_drafts}$/ ) {
+		if ( $dfolder =~ /^$$k{imap_drafts}$/ ) {
 			$in->{to} = $to;
 		}
 		else {
@@ -848,7 +813,7 @@ sub do_response {
 	}
 	elsif ( $type =~ /^draft$/i ) {						# Recover draft
 
-		$in->{role} 	= $site->get_role_id( $$msg{head}->get( 'From' ) );
+		$in->{role} 	= $k->get_role_id( $$msg{head}->get( 'From' ) );
 		$in->{to}		= $$msg{head}->get( 'To' ) || ''; 
 		$in->{cc} 		= $$msg{head}->get( 'Cc' ) || ''; 
 		$in->{bcc} 		= $$msg{head}->get( 'Bcc' ) || ''; 
@@ -865,7 +830,7 @@ sub do_response {
 			my $ftype 	= $$msg{attach}{$fkey}{type};
 			$ftype 		=~ s/\//_/g;
 	
-			my $file = "$$site{file_path}/$$site{user}--$now--$ftype--$fname";
+			my $file = "$$k{file_path}/$$k{user}--$now--$ftype--$fname";
 	
 			if ( open( ATTACH, ">$file" ) ) {
 					
@@ -884,7 +849,7 @@ sub do_response {
 			}
 		}
 	
-		$$site{imap}->message_delete( $dfolder, $uid );
+		$$k{imap}->message_delete( $dfolder, $uid );
 	}
 	else { 												# forward
 		my $now = time;
@@ -902,7 +867,7 @@ sub do_response {
 			my $ttype 	= $$msg{attach}{$fkey}{type};
 			$ttype 		=~ s/\//_/g;
 
-			my $file = "$$site{file_path}/$$site{user}--$now--$ttype--$fname";
+			my $file = "$$k{file_path}/$$k{user}--$now--$ttype--$fname";
 
 			if ( open( ATTACH, ">$file" ) ) {
 				next if ( ! defined $$msg{attach}{$fkey}{fh} );
@@ -926,19 +891,19 @@ sub do_response {
 	$mime->filer->purge; # Removes the files used by the MIME tool.
 
 	# Cheat the compose form to post to the correct place.
-	$$site{uri} = "$$site{rootp}/compose/$folder/$uid";
+	$$k{uri} = "$$k{rootp}/compose/$folder/$uid";
 
-	return( compose_form( $site, $in ) );
-} # END $site->do_response
+	return($k->compose_form($in));
+} # END $k->do_response
 
 #-------------------------------------------------
-# $site->do_view($r, $folder, $uid, $field, $order, $header)
+# $k->do_view($r, $folder, $uid, $field, $order, $header)
 #-------------------------------------------------
 sub do_view {
-	my ($site, $r, $folder, $uid, $field, $order, $header) = @_;
+	my ($k, $r, $folder, $uid, $field, $order, $header) = @_;
 
-	my $in 				= $site->param(Apache2::Request->new($r));
-	$$site{page_title} .= 'View Message';	
+	my $in 				= $k->param(Apache2::Request->new($r));
+	$$k{page_title} .= 'View Message';	
 
 	return('Invalid message.') if (! is_text($folder));
 	return('Invalid message.') if (! is_integer($uid));
@@ -946,8 +911,8 @@ sub do_view {
 	return('Invalid message.') if (! is_integer($order));
 
 	$header 	= 0 if (! is_integer($header));
-	my %fldrs 	= $$site{imap}->folder_list();
-	my @sorted 	= $$site{imap}->message_sort($folder, $field, $order);
+	my %fldrs 	= $$k{imap}->folder_list();
+	my @sorted 	= $$k{imap}->message_sort($folder, $field, $order);
 
 	my ( $nu, $pu, $tu );
 
@@ -964,60 +929,59 @@ sub do_view {
 	my ($next, $prev);
 
 	if (! defined $pu) {
-		$prev = "$$site{rootp}/main/$folder/$field/$order";
+		$prev = "$$k{rootp}/main/$folder/$field/$order";
 	}
 	else {
-		$prev = "$$site{rootp}/view/$folder/$pu/$field/$order";
+		$prev = "$$k{rootp}/view/$folder/$pu/$field/$order";
 	}
 
 	if (! defined $nu) {
-		$next = "$$site{rootp}/main/$folder/$field/$order";
+		$next = "$$k{rootp}/main/$folder/$field/$order";
 	}
 	else {
-		$next = "$$site{rootp}/view/$folder/$nu/$field/$order";
+		$next = "$$k{rootp}/view/$folder/$nu/$field/$order";
 	}
 
 	if ($in->{move}) { 			# Do the move
 		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
-			$$site{imap}->message_move($folder, $uid, $in->{folder});
+			$$k{imap}->message_move($folder, $uid, $in->{folder});
 
-			return($site->_relocate($r, $next)); # redirect to the next message.
+			return($k->_relocate($r, $next)); # redirect to the next message.
 		}
 	}
 
 	if ($in->{copy}) {
 		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
-			$$site{imap}->message_copy($folder, $uid, $in->{folder});
+			$$k{imap}->message_copy($folder, $uid, $in->{folder});
 
-			return($site->_relocate($r, $next)); # redirect to the next message.
+			return($k->_relocate($r, $next)); # redirect to the next message.
 		}
 	}
 
 	if ($in->{delete}) { 		# Do the delete.
-		
-		$$site{p_delete} = 1 if ($folder eq $$site{imap_trash});
+		$$k{p_delete} = 1 if ($folder eq $$k{imap_trash});
 
-		if ($$site{p_delete}) {
-			$$site{imap}->message_delete($folder, $uid);
+		if ($$k{p_delete}) {
+			$$k{imap}->message_delete($folder, $uid);
 		}
 		else {
-			$$site{imap}->message_move($folder, $uid, $$site{imap_trash});
+			$$k{imap}->message_move($folder, $uid, $$k{imap_trash});
 		}
 
-		return($site->_relocate($r, $next));
+		return($k->_relocate($r, $next));
 	}
 
 	# Will need to work out the next and previous messages.
 	# As well as which way we are currently sorted to know.
 	my ($msg);
 	
-	my ($chk, $envelope, $body) = $$site{imap}->message_decode($folder, $uid);
+	my ($chk, $envelope, $body) = $$k{imap}->message_decode($folder, $uid);
 	
 	return('Could not decode message') if (! $chk);
 
 	# Headers to use.
 	my @files;
-	my $subject = $site->{imap}->decode_iso($envelope->subject());
+	my $subject = $k->{imap}->decode_iso($envelope->subject());
 	my $date = $envelope->date();
 
 	# FIXME: Should this use the parts and display them properly?
@@ -1026,9 +990,41 @@ sub do_view {
 	my @cc = $envelope->cc_addresses();
 
 	my $from = join(', ', @from);
-	$from 		= $site->{imap}->decode_iso( $from );
+	$from 		= $k->{imap}->decode_iso( $from );
 
 	my ($to, $cc);
+	$to = join(", ", @to);
+	$cc = join(", ", @cc);
+	
+	for my $part ($body->parts()) {
+		my %parm = $body->bodyparms($part);
+		push(@files, 
+		"<strong>$part: ".$body->bodytype($part). "/".
+		$body->bodysubtype($part),
+		"</strong><br />",
+		'<hr>',
+		'<i>',%parm, '</i>',
+		'<hr>',
+		$body->bodydisp($part),
+		'<hr>',
+		$body->bodyid($part),
+		'<hr>',
+		$body->bodydesc($part),
+		'<hr>',
+		$body->bodyenc($part),
+		'<hr>',
+		$body->bodysize($part),
+		'<hr>',
+		$body->bodylang($part),
+		'<hr>',
+		$body->bodystructure($part),
+		'<hr>',
+		$body->envelopestruct($part),
+		'<hr>',
+		$body->textlines($part),
+		'<hr>',
+		);
+	}
 
 #	# Figure out the attachment names to list.
 #	for my $fkey ( sort { $a <=> $b }  keys %{$$msg{attach}} ) {
@@ -1037,38 +1033,38 @@ sub do_view {
 #
 #		next if ( ! defined $name ); # Fix this, we are skipping attachments.
 #
-#		push( @files, ht_a( "$$site{rootp}/attached/$folder/$uid/$fkey/$name",
+#		push( @files, ht_a( "$$k{rootp}/attached/$folder/$uid/$fkey/$name",
 #							$name, 'target="_new"' ) );
 #	}
 
 	my @folders = ('', 'Move to folder...');
-	for my $foldr (sort { ($a eq $$site{imap_inbox}) ? -1 : $a cmp $b } 
+	for my $foldr (sort { ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b } 
 					(keys(%fldrs))) {
 		next if ($foldr eq $folder);
 
-		push(@folders, $foldr, $site->inbox_mask($foldr));
+		push(@folders, $foldr, $k->inbox_mask($foldr));
 	}
 
 	my @lines = ( ht_div({ 'class' => 'maction_box' }),
-					ht_form($$site{uri}),
+					ht_form($$k{uri}),
 					ht_ul(undef,
 						ht_li(undef, ht_a( $prev, 'Prev' )),
 						ht_li(undef, ht_a( $next, 'Next' )),
 
 						ht_li(undef,
-							ht_a("$$site{rootp}/main/$folder/$field/$order", 
+							ht_a("$$k{rootp}/main/$folder/$field/$order", 
 								'Folder')),
 
 						ht_li(undef,
-							ht_a("$$site{rootp}/response/reply/$folder/$uid",
+							ht_a("$$k{rootp}/response/reply/$folder/$uid",
 								'Reply')),
 
 						ht_li(undef,
-							ht_a("$$site{rootp}/response/group/$folder/$uid",
+							ht_a("$$k{rootp}/response/group/$folder/$uid",
 								'Reply All')),
 
 						ht_li(undef,
-							ht_a("$$site{rootp}/response/fwd/$folder/$uid",
+							ht_a("$$k{rootp}/response/fwd/$folder/$uid",
 								'Forward')),
 
 						ht_li(undef,
@@ -1085,7 +1081,7 @@ sub do_view {
 					ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'From:'),
 						ht_td({ 'class' => 'dta' },
-								$site->address_links($from) )),
+								$k->address_links($from) )),
 
 					ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'To:'),
@@ -1115,15 +1111,15 @@ sub do_view {
 					ht_p(),
 						( ($header) ?
 						ht_a(
-						"$$site{rootp}/view/$folder/$uid/$field/$order/0", 
+						"$$k{rootp}/view/$folder/$uid/$field/$order/0", 
 						'View Standard Headers' ) :
-						ht_a( "$$site{rootp}/view/$folder/$uid/$field/$order/1",
+						ht_a( "$$k{rootp}/view/$folder/$uid/$field/$order/1",
 								'View Full Headers' ) ), 
 					ht_up(), 
 					ht_udiv() );
 
 	if ($header) { # View full headers.
-		my %hdrs = $site->{imap}->message_header($uid, 'ALL');
+		my %hdrs = $k->{imap}->message_header($uid, 'ALL');
 		my @l;
 
 		for my $h (sort(keys(%hdrs))) {
@@ -1136,7 +1132,7 @@ sub do_view {
 	push(@lines, ht_div({ 'class' => 'mbody_box' }));
 
 	#
-	#push(@lines, $site->{imap}->{imap}->body_string($uid));
+	#push(@lines, $k->{imap}->{imap}->body_string($uid));
 
 	# Get the body of the message presentable.
 	if ( $$msg{type} =~ /^(text|message)$/ ) {
@@ -1172,13 +1168,13 @@ sub do_view {
 	}
 	
 	return(@lines, ht_udiv());
-} # END $site->do_view
+} # END $k->do_view
 
 #-------------------------------------------------
-# $site->address_links( $from )
+# $k->address_links( $from )
 #-------------------------------------------------
 sub address_links {
-	my ( $site, $from ) = @_;
+	my ( $k, $from ) = @_;
 
 	return( 'Unknown Sender' ) if ( ! is_text( $from ) );
 
@@ -1202,52 +1198,52 @@ sub address_links {
 		$name =~ s/$addr//g;
 		$name =~ s/(<|>|")//g;
 
-		push( @emails, ht_a( 	"$$site{address_root}/add?first=$name".
+		push( @emails, ht_a( 	"$$k{address_root}/add?first=$name".
 								"&amp;email=$addr&amp;balk=yes",
 								ht_qt( $orig ) ) );
 	}
 
 	return( join( ', ', @emails ) );
-} # END $site->address_links
+} # END $k->address_links
 
 #-------------------------------------------------
-# $site->role_info( $role_id )
+# $k->role_info( $role_id )
 #-------------------------------------------------
 sub role_info {
-	my ( $site, $role ) = @_;
+	my ( $k, $role ) = @_;
 
-	my $sth = db_query( $$site{dbh}, 'get role info',
+	my $sth = db_query( $$k{dbh}, 'get role info',
 						'SELECT name, reply_to, savesent, signature ',
 						'FROM wm_roles WHERE id = ', sql_num( $role ), 
-						'AND wm_user_id = ', sql_num( $$site{user_id} ) );
+						'AND wm_user_id = ', sql_num( $$k{user_id} ) );
 
 	my ( $name, $from, $sent, $sig ) = db_next( $sth );
 
 	db_finish( $sth );
 
 	return( $name, $from, $sent, $sig );
-} # END $site->role_info
+} # END $k->role_info
 
 #-------------------------------------------------
-# $site->get_role_id( $from )
+# $k->get_role_id( $from )
 #-------------------------------------------------
 sub get_role_id {
-	my ( $site, $from ) = @_;
+	my ( $k, $from ) = @_;
 
 	$from =~ s/^.*<//s;
 	$from =~ s/>.*$//s;
 
-	my $sth = db_query( $$site{dbh}, 'get role info',
+	my $sth = db_query( $$k{dbh}, 'get role info',
 						'SELECT id FROM wm_roles WHERE reply_to = ', 
 						sql_str( $from ), 'AND wm_user_id = ', 
-						sql_num( $$site{user_id} ) );
+						sql_num( $$k{user_id} ) );
 
 	my ( $id ) = db_next( $sth );
 
 	db_finish( $sth );
 
 	return( is_number( $id ) ? $id : '' );
-} # END $site->get_role_id
+} # END $k->get_role_id
 
 # EOF
 1;

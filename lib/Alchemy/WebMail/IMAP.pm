@@ -3,19 +3,12 @@ package Alchemy::WebMail::IMAP;
 use strict;
 
 use Encode qw(decode);
-use Mail::Cclient;
 use Mail::IMAPClient;
-use Mail::IMAPClient::BodyStructure;
 use MIME::Entity;
-use MIME::Parser;
 use Net::SMTP;
-use POSIX qw(strftime);
+#use POSIX qw(strftime);
 
 use KrKit::Validate;
-
-############################################################
-# Variables                                                #
-############################################################
 
 ############################################################
 # Functions                                                #
@@ -56,7 +49,7 @@ sub address_list {
 sub alive {
 	my $self = shift;
 
-	return((defined $self->{imap}) ? 1 : 0);
+	return(defined $self->{imap} ? 1 : 0);
 } # END $imap->alive
 
 #-------------------------------------------------
@@ -75,7 +68,7 @@ sub decode_iso {
 	my ($self, $string) = @_;
 
 	# Decodes UTF8 stuff in a string.
- 	$string =~ s/(=\?.*\?=)/decode("MIME-Header", $1)/eg;
+	$string = decode('MIME-Header', $string);
 
 	return($string);
 } # END $imap->decode_iso
@@ -267,7 +260,7 @@ sub message_append {
 	$flag = '\Seen' if ( ! is_text( $flag ) );
 
 	my ( %seen, $nuid );
-	my $date = Mail::Cclient::rfc822_date;
+	my $date = $self->{imap}->Rfc822_date();
 
 	# Get the list of uid's in the folder.
 	#$self->folder_open( $folder );
@@ -314,35 +307,38 @@ sub message_clearflag {
 } # END $imap->message_clearflag
 
 #-------------------------------------------------
-# $imap->message_copy( $original_folder, $uid, $folder )
+# $imap->message_copy($original_folder, $uid, $folder)
 #-------------------------------------------------
 sub message_copy {
-	my ( $self, $original_folder, $uid, $folder ) = @_;
-
-	if ( ! is_text( $original_folder ) ) {
-		$self->{error} = 'Folder does not exist.';
-		return( 0 );
-	}
-
-	if ( ! is_integer( $uid ) ) {
-		$self->{error} = 'UID does not exist.';
-		return( 0 );
-	}
-
-	if ( ! is_text( $folder ) ) {
-		$self->{error} = 'Folder does not exist.';
-		return( 0 );
-	}
-
+	my ($self, $original_folder, $uid, $folder) = @_;
+	
 	$self->{error} = undef;
 
-	$self->folder_open( $original_folder );
+	if (! is_text($original_folder)) {
+		$self->{error} = 'Folder does not exist.';
+		return(0);
+	}
 
-	$self->{imap}->copy( "$uid", $folder, 'uid' );
+	if (! is_integer($uid)) {
+		$self->{error} = 'UID does not exist.';
+		return(0);
+	}
+
+	if (! is_text($folder)) {
+		$self->{error} = 'Folder does not exist.';
+		return(0);
+	}
+
+	$self->{imap}->select($original_folder);
+
+	if(!$self->{imap}->copy($folder, $uid)) {
+		$self->{error} = 'Could not copy message';
+		return(0);
+	}
 
 	$self->{imap}->expunge();
 
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return(1);
 } # END $imap->message_copy
 
 #-------------------------------------------------
@@ -357,19 +353,8 @@ sub message_decode {
 	my $body = $self->{imap}->get_bodystructure($uid);
 	my $envelope = $self->{imap}->get_envelope($uid);
 
-	return(1, $envelope, $body);
+	my %msg;
 
-#	my $msgno 	= $self->message_msgno( $uid );
-#	my $mime 	= new MIME::Parser; 
-#
-#	$mime->output_dir( $self->{temp} );
-#	$mime->output_to_core( 0 );
-#	$mime->tmp_to_core( 0 );
-#	$mime->extract_nested_messages( 'REPLACE' );
-#
-#	# Get the decoded message and Start decoding.
-#	my $entity = $mime->parse_data( $self->{imap}->fetch_message( $msgno ) );
-#
 #	my %msg = ( 'head' 	=> $entity->head,
 #				'body'	=> $entity->bodyhandle	);
 #
@@ -377,15 +362,11 @@ sub message_decode {
 #
 #	my $print 	= ( $msg{type} =~ /^(text|message)$/ ) ? 1 : 0 ;
 #	my $i 		= 0;
-#
-#	my @parts = $entity->parts();
-#
-#	for my $item ( @parts ) {
-#
-# 		my ( $type, $subtype ) = split( '/', $item->head->mime_type );
-#
-#		#warn( "Type ($i): $type / $subtype" );
-#	
+	
+	for my $part ($body->parts()) {
+		my $type = $body->bodytype($part);
+		my $subtype = $body->bodysubtype($part);
+
 #		# This makes nested messages go.
 #		if ( $type =~ /multipart/ ) {
 #			push( @parts, $parts[$i]->parts );
@@ -394,7 +375,6 @@ sub message_decode {
 #		}
 #
 #		if ( $type =~ /^(text|message)$/ && ! $print )  {
-#
 #			# Override the core one if we should. ie it's multipart
 #			$msg{body} 		= $item->bodyhandle; 
 #			$msg{type} 		= $type;
@@ -431,9 +411,9 @@ sub message_decode {
 #		}
 #
 #		$i++;
-#	}
-#
-#	return(1, $mime, \%msg);
+	}
+	
+	return(1, $envelope, $body);
 } # END $imap->message_decode
 
 #-------------------------------------------------
@@ -518,7 +498,8 @@ sub message_mime {
 	}
 
 	my @attachments;
-	my $date 		= strftime( "%a, %d %b %Y %H:%M:%S %z", localtime( ) );
+	#my $date 		= strftime( "%a, %d %b %Y %H:%M:%S %z", localtime( ) );
+	my $date = $self->{imap}->Rfc822_date();
 	my %msg 		= ( 'To' 			=> $in->{to},
 						'From' 			=> $in->{from},
 						'Date'			=> $date,
@@ -562,35 +543,38 @@ sub message_mime {
 } # END $imap->message_mime()
 
 #-------------------------------------------------
-# $imap->message_move( $original_folder, $uid, $folder )
+# $imap->message_move($original_folder, $uid, $folder)
 #-------------------------------------------------
 sub message_move {
-	my ( $self, $original_folder, $uid, $folder ) = @_;
-
-	if ( ! is_text( $original_folder ) ) {
-		$self->{error} = 'Folder does not exist.';
-		return( 0 );
-	}
-
-	if ( ! is_integer( $uid ) ) {
-		$self->{error} = 'UID does not exist.';
-		return( 0 );
-	}
-
-	if ( ! is_text( $folder ) ) {
-		$self->{error} = 'Folder does not exist.';
-		return( 0 );
-	}
-
+	my ($self, $original_folder, $uid, $folder) = @_;
+	
 	$self->{error} = undef;
 
-	$self->folder_open( $original_folder );
+	if (! is_text($original_folder)) {
+		$self->{error} = 'Folder does not exist.';
+		return(0);
+	}
 
-	$self->{imap}->move( "$uid", $folder, 'uid' );
+	if (! is_integer($uid)) {
+		$self->{error} = 'UID does not exist.';
+		return(0);
+	}
+
+	if (! is_text($folder)) {
+		$self->{error} = 'Folder does not exist.';
+		return(0);
+	}
+
+	$self->{imap}->select($original_folder);
+
+	if(!$self->{imap}->move($folder, $uid)) {
+		$self->{error} = 'Could not move message.';
+		return(0);
+	}
 
 	$self->{imap}->expunge();
 
-	return( ( defined $self->{error} ) ?  0 :  1 );
+	return(1);
 } # END $imap->message_move
 
 #-------------------------------------------------
@@ -600,10 +584,10 @@ sub message_msgno {
 	my ( $self, $uid ) = @_;
 
 	return( $self->{imap}->msgno( $uid ) );
-} # END $imap->message_uid
+} # END $imap->message_msgno
 
 #-------------------------------------------------
-# $imap->message_send( $site, $message )
+# $imap->message_send($site, $message)
 #-------------------------------------------------
 sub message_send {
 	my ( $self, $site, $message ) = @_;
@@ -695,7 +679,7 @@ sub message_setflag {
 } # END $imap->message_setflag
 
 #-------------------------------------------------
-# $imap->message_sort( $folder, $field, $order )
+# $imap->message_sort($folder, $field, $order, $type)
 #-------------------------------------------------
 sub message_sort {
 	my ($self, $folder, $field, $order, $type) = @_;
@@ -713,35 +697,26 @@ sub message_sort {
 } # END $imap->message_sort
 
 #-------------------------------------------------
-# $imap->message_uid( $msgno )
-#-------------------------------------------------
-sub message_uid {
-	my ( $self, $msgno ) = @_;
-
-	return( $self->{imap}->uid( $msgno ) );
-} # END $imap->message_uid
-
-#-------------------------------------------------
-# new( $host, $proto, $mailbox, $user, $pass )
+# new($host, $proto, $mailbox, $user, $pass, $tmp)
 #-------------------------------------------------
 sub new {
-	my ( $proto, $host, $protocol, $mailbox, $user, $pass, $tmp ) = @_;
+	my ($proto, $host, $protocol, $mailbox, $user, $pass, $tmp) = @_;
 
 	# FIXME: Make this understand SSL again.
 	# Fix the arguement list.
 
-	die "IMAP Hostname undefined" 	if ( ! is_text( $host ) );
-	die "IMAP protocol undefined" 	if ( ! is_text( $protocol ) );
-	die "IMAP mailbox undefined" 	if ( ! is_text( $mailbox ) );
-	die "IMAP username undefined" 	if ( ! is_text( $user ) );
-	die "IMAP password undefined" 	if ( ! is_text( $pass ) );
-	die "IMAP temp undefined" 		if ( ! is_text( $tmp ) );
+	die "IMAP Hostname undefined" 	if (! is_text($host));
+	die "IMAP protocol undefined" 	if (! is_text($protocol));
+	die "IMAP mailbox undefined" 	if (! is_text($mailbox));
+	die "IMAP username undefined" 	if (! is_text($user));
+	die "IMAP password undefined" 	if (! is_text($pass));
+	die "IMAP temp undefined" 		if (! is_text($tmp));
 
-	my $class 	= ref( $proto ) || $proto;
+	my $class 	= ref($proto) || $proto;
 	my $self 	= {};
 	
 	# Check for <user> in the hostname. And set it.
-	$host 		=~ s/<user>/$user/g 	if ( $host =~ /<user>/ );
+	$host =~ s/<user>/$user/g if ($host =~ /<user>/);
 
 	# Save the defaults we were passed for use later.
 	$self->{host} 		= $host;
@@ -753,33 +728,13 @@ sub new {
 	$self->{error}		= undef;
 	$self->{temp}		= $tmp;
 
-	bless( $self, $class );
+	bless($self, $class);
 
-	# The login call back.
-#	Mail::Cclient::set_callback( 	login 	=> sub { 	return( $self->{user},
-#												$self->{password} );
-#									},
-#					log 	=> sub { 	my ( $str, $type ) = @_;
-#										if ( $type =~ /error/ ) {
-#											$self->{error} = $str;
-#										}
-#									},
-#					lsub	=> sub {
-#										my ( $strm, $dlim, $mbox, $attr ) = @_;
-#										$mbox =~ s/^.*}//;
-#										$self->{folders}{$mbox} = $attr;
-#									});
-
-	# Set these so we don't waste time.
-	#Mail::Cclient::parameters( undef, RSHTIMEOUT => 0, MAXLOGINTRIALS => 1 );
-
-	#$self->{imap} = Mail::Cclient->new( $self->{hostproto}.$self->{mailbox} );
-	
-	$self->{imap} = Mail::IMAPClient->new(	Server => $self->{host},
+	$self->{imap} = Mail::IMAPClient->new(Server => $self->{host},
 											User => $self->{user},
 											Password => $self->{password},);
 
-	return( $self );
+	return($self);
 } # END new()
 
 # EOF
@@ -799,7 +754,7 @@ Alchemy::WebMail::IMAP - IMAP Wrapper Library.
 
 =head1 DESCRIPTION
 
-This class is a wraper for the Mail::Cclient module. This is wrapped to
+This class is a wraper for the Mail::IMAPClient module. This is wrapped to
 hide the interface and allow a simplified transition to a seperate IMAP
 module if the need arises.
 
@@ -890,8 +845,6 @@ Valid flags include, but are not limited to '\Seen', '\Draft',
 
 Decodes the specified message, C<$uid>, in the given C<$folder>. This
 returns ( 1, $mime_oject, $msg_object ) on success and ( 0 ) on failure.
-The mime object is from MIME::Parser. The msg object is the decoded mime
-object with the attachments added to the hash reference.
 
 =item $imap->message_delete( $folder, $uid )
 
@@ -947,11 +900,6 @@ C<$field> in C<$order>. Order should be either 1 for ascending or 0 for
 descending. Valid fields include "subject", "date", "size", "to" and
 "from".
 
-=item $imap->message_uid( $msgno )
-
-Returns the message uid for the currently open folder based on its
-message number.
-
 =back
 
 =head1 SEE ALSO
@@ -960,7 +908,7 @@ Alchemy::Webmail(3), Alchemy(3), KrKit(3)
 
 =head1 LIMITATIONS
 
-This module suffers the limitations of Mail::Cclient, it's basis, as
+This module suffers the limitations of Mail::IMAPClient, it's basis, as
 well as all of the limitations inherant in the IMAP protocol.
 
 =head1 AUTHOR
