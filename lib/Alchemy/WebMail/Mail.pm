@@ -116,20 +116,20 @@ sub compose_checkvals {
 	my @errors;
 
 	if (! is_integer($in->{role})) {
-		push(@errors, 'Select a role to use.');
+		push(@errors, ht_li(undef, 'Select a role to use.'));
 	}
 
 	if (! is_email($in->{to})) {
-		push(@errors, 'Enter a valid "To" e-mail address.');
+		push(@errors, ht_li(undef, 'Enter a valid "To" e-mail address.'));
 	}
 
 	if (! is_text($in->{message})) {
-		push(@errors, 'Enter a message for this e-mail.');
+		push(@errors, ht_li(undef, 'Enter a message for this e-mail.'));
 	}
 
 	if (@errors) {
 		return(ht_div({ 'class' => 'error' }, 
-						ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+				ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
 	}
 } # END compose_checkvals
 
@@ -137,45 +137,45 @@ sub compose_checkvals {
 # $k->compose_form($in)
 #-------------------------------------------------
 sub compose_form {
-	my ( $k, $in ) = @_;
+	my ($k, $in) = @_;
 
-	my ( @roles, @files, @sigs );
+	my (@roles, @files, @sigs);
 
-	my $sth = db_query( $$k{dbh}, 'get roles list',
+	my $sth = db_query($$k{dbh}, 'get roles list',
 						'SELECT id, main_role, role_name, reply_to, ',
 						' signature FROM wm_roles WHERE wm_user_id = ', 
-						sql_num( $$k{user_id} ), 'ORDER BY role_name' );
+						sql_num($$k{user_id}), 'ORDER BY role_name');
 
-	while ( my ( $id, $def, $name, $email, $sig ) = db_next( $sth ) ) {
-		push( @roles, $id, "$name &lt;$email&gt;" );
+	while (my ($id, $def, $name, $email, $sig) = db_next($sth)) {
+		push(@roles, $id, "$name &lt;$email&gt;");
 
-		$in->{role} = $id if ( $def && ( ! defined $in->{role} ) );
+		$in->{role} = $id if ($def && (! defined $in->{role}));
 
-		$sig = ht_uqt( ( defined $sig ) ? $sig : '' );
+		$sig = ht_uqt((defined $sig) ? $sig : '');
 		$sig =~ s/"/\\"/g;
 		$sig =~ s/(\r\n|\r|\n)/\\n/g;
 
-		push( @sigs, '"'. $sig. '"' );
+		push(@sigs, '"'. $sig. '"');
 	}
 
-	db_finish( $sth );
+	db_finish($sth);
 
-	if ( opendir( ATTACHMENTS, $$k{file_path} ) ) {
+	if (opendir(ATTACHMENTS, $$k{file_path})) {
 
-		while ( my $file = readdir( ATTACHMENTS ) ) {
+		while (my $file = readdir(ATTACHMENTS)) {
 			next if ( $file !~ /^$$k{user}--/ );
 
-			( my $name = $file ) =~ s/^.*--//; # Get out the filename
+			(my $name = $file) =~ s/^.*--//; # Get out the filename
 			
-			push( @files, $name, ht_br() );
+			push(@files, $name, ht_br());
 		}
 
-		closedir( ATTACHMENTS );
+		closedir(ATTACHMENTS);
 	}
 
 	my $sigcode = '	sigs = new Array( '. join(', ', @sigs).')';
 
-	return( ht_form_js($$k{uri}, 'name="compose"'),	
+	return(ht_form_js($$k{uri}, 'name="compose"'),	
 
 			q!<script type="text/javascript">!,
 
@@ -290,7 +290,7 @@ sub compose_form {
 # $k->do_attached( $r, $folder, $uid, $part )
 #-------------------------------------------------
 sub do_attached {
-	my ( $k, $r, $folder, $uid, $part ) = @_;
+	my ($k, $r, $folder, $uid, $part) = @_;
 
 	return('Invalid folder.') 		if (! is_text($folder));
 	return('Invalid message.') 		if (! is_integer($uid));
@@ -302,9 +302,12 @@ sub do_attached {
 	
 	$$k{frame} = 'none'; # So we don't frame output.
 
-	my $fh 				= $$msg{attach}{$part}{fh};
 	$$k{contenttype} = $$msg{attach}{$part}{type};
-	$$k{body_file} 	= $$msg{attach}{$part}{path};
+	$$k{body_file} = $$msg{attach}{$part}{path};
+	
+	# Can not purge here. Becaues then the attachment will not be
+	# available for display.
+	#$mime->filer->purge; 
 
 	return('Get Attachment.');
 } # END $k->do_attached
@@ -525,45 +528,39 @@ sub do_main {
 	my @folders = ('', 'Move to folder...');
 	my %fldrs 	= $$k{imap}->folder_list();
 
-	for my $foldr (sort	{ ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b } 
+	for my $f (sort	{ ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b } 
 						(keys(%fldrs))) {
 		
-		next if ($foldr eq $folder);
+		next if ($f eq $folder);
 
-		push(@folders, $foldr, $k->inbox_mask($foldr));
+		push(@folders, $f, $k->inbox_mask($f));
 	}
-
-	if ($in->{move}) { 			# Do the move
-		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
-			my $count = 0;
-
-			for my $msg (keys(%$in)) {
-				next if ($msg !~ /^msg_/);
-				(my $muid = $msg) =~ s/^msg_//;
-				$count += $$k{imap}->message_move($folder, $muid, 
-														$in->{folder});
-			}
-
-			push(@lines, "$count message(s) moved to $in->{folder}.");
+		
+	# Do the move
+	if ($$in{move} && is_text($$in{folder}) && defined $fldrs{$$in{folder}}) {
+		my $count = 0; 
+		
+		for my $msg (keys(%$in)) {
+			next if ($msg !~ /^msg_/);
+			(my $muid = $msg) =~ s/^msg_//;
+			$count += $$k{imap}->message_move($folder, $muid, $$in{folder});
 		}
+	
+		push(@lines, "$count message(s) moved to $in->{folder}.");
 	}
 
-	if ($in->{copy}) {
-		if (is_text($in->{folder}) && defined $fldrs{$in->{folder}}) {
-			my $count = 0;
-
-			for my $msg (keys(%$in)) {
-				next if ($msg !~ /^msg_/);
-				(my $muid = $msg) =~ s/^msg_//;
-				$count += $$k{imap}->message_copy($folder, $muid, 
-														$in->{folder});
-			}
-
-			push(@lines, "$count message(s) copied to $in->{folder}.");
+	if ($$in{copy} && is_text($$in{folder}) && defined $fldrs{$$in{folder}}) {
+		my $count = 0; 
+		
+		for my $msg (keys(%$in)) {
+			next if ($msg !~ /^msg_/);
+			(my $muid = $msg) =~ s/^msg_//;
+			$count += $$k{imap}->message_copy($folder, $muid, $$in{folder});
 		}
+		push(@lines, "$count message(s) copied to $in->{folder}.");
 	}
 
-	if ($in->{delete}) { 		# Do the delete.
+	if ($$in{delete}) { 		# Do the delete.
 		my $count = 0;
 
 		# Force delete in the trash bin.
@@ -658,10 +655,6 @@ sub do_main {
 
 		my %header = $$k{imap}->message_header($uid, 'To', 'From', 
 													'Subject', 'Date');
-
-		if (! defined $$flags{'\Seen'}) { # Force the message to remane new.
-			$$k{imap}->message_clearflag( $uid, '\Seen' );
-		}
 
 		# FIXME: Maybe everything should understand the new header hash...
 		$header{To} = $header{To}[0];
@@ -902,7 +895,7 @@ sub do_response {
 sub do_view {
 	my ($k, $r, $folder, $uid, $field, $order, $header) = @_;
 
-	my $in 				= $k->param(Apache2::Request->new($r));
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title} .= 'View Message';	
 
 	return('Invalid message.') if (! is_text($folder));
@@ -973,69 +966,28 @@ sub do_view {
 
 	# Will need to work out the next and previous messages.
 	# As well as which way we are currently sorted to know.
-	my ($msg);
-	
-	my ($chk, $envelope, $body) = $$k{imap}->message_decode($folder, $uid);
+	my ($chk, $mime, $msg) = $$k{imap}->message_decode($folder, $uid);
 	
 	return('Could not decode message') if (! $chk);
 
 	# Headers to use.
 	my @files;
-	my $subject = $k->{imap}->decode_iso($envelope->subject());
-	my $date = $envelope->date();
 
-	# FIXME: Should this use the parts and display them properly?
-	my @from = $envelope->from_addresses();
-	my @to = $envelope->to_addresses();
-	my @cc = $envelope->cc_addresses();
+	my $subject = $k->{imap}->decode_iso($$msg{head}->get( 'Subject' ) || '');
+	my $from = $k->{imap}->decode_iso($$msg{head}->get('From') || '');
+	my $to = $k->{imap}->decode_iso($$msg{head}->get( 'To' ) || '');
+	my $cc = $k->{imap}->decode_iso($$msg{head}->get( 'Cc' ) || '');
+	my $date = $$msg{head}->get('Date')	|| '';
 
-	my $from = join(', ', @from);
-	$from 		= $k->{imap}->decode_iso( $from );
+	# Figure out the attachment names to list.
+	for my $fkey ( sort { $a <=> $b }  keys %{$$msg{attach}} ) {
+		my $name = $$msg{attach}{$fkey}{name};
 
-	my ($to, $cc);
-	$to = join(", ", @to);
-	$cc = join(", ", @cc);
-	
-	for my $part ($body->parts()) {
-		my %parm = $body->bodyparms($part);
-		push(@files, 
-		"<strong>$part: ".$body->bodytype($part). "/".
-		$body->bodysubtype($part),
-		"</strong><br />",
-		'<hr>',
-		'<i>',%parm, '</i>',
-		'<hr>',
-		$body->bodydisp($part),
-		'<hr>',
-		$body->bodyid($part),
-		'<hr>',
-		$body->bodydesc($part),
-		'<hr>',
-		$body->bodyenc($part),
-		'<hr>',
-		$body->bodysize($part),
-		'<hr>',
-		$body->bodylang($part),
-		'<hr>',
-		$body->bodystructure($part),
-		'<hr>',
-		$body->envelopestruct($part),
-		'<hr>',
-		$body->textlines($part),
-		'<hr>',
-		);
+		next if (! defined $name); # Fix this, we are skipping attachments.
+
+		push(@files, ht_a("$$k{rootp}/attached/$folder/$uid/$fkey/$name",
+							$name, 'target="_new"'));
 	}
-
-#	# Figure out the attachment names to list.
-#	for my $fkey ( sort { $a <=> $b }  keys %{$$msg{attach}} ) {
-#
-#		my $name = $$msg{attach}{$fkey}{name};
-#
-#		next if ( ! defined $name ); # Fix this, we are skipping attachments.
-#
-#		push( @files, ht_a( "$$k{rootp}/attached/$folder/$uid/$fkey/$name",
-#							$name, 'target="_new"' ) );
-#	}
 
 	my @folders = ('', 'Move to folder...');
 	for my $foldr (sort { ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b } 
@@ -1131,17 +1083,14 @@ sub do_view {
 
 	push(@lines, ht_div({ 'class' => 'mbody_box' }));
 
-	#
-	#push(@lines, $k->{imap}->{imap}->body_string($uid));
-
 	# Get the body of the message presentable.
-	if ( $$msg{type} =~ /^(text|message)$/ ) {
-	
+	if ($$msg{type} =~ /^(text|message)$/) {
  		my $txt = $$msg{body}->as_string || '';
-		$txt = ht_qt( $txt ) if ( $$msg{type} !~ /html/ );
 
 		# Deal with html
-		if ( $$msg{subtype} !~ /html/ ) {
+		if ($$msg{subtype} !~ /html/) {
+			$txt = ht_qt($txt);
+
 			# Clean up the some characters so they appear corretly.
 			my $br 	= ht_br();
 	  		$txt 	=~ s|\n|$br\n|g;	
@@ -1158,7 +1107,6 @@ sub do_view {
 
 	  		$txt =~ s|(ftp://[a-z\-0-9/~._,]+[a-z\-0-9/_~])
 					 |<a href="$1">$1</a>|gimx;
-
 		}
 
 		push(@lines, $txt);
@@ -1166,6 +1114,8 @@ sub do_view {
 	else { # just a binary attachement.
 		push(@lines, ht_b('No message text.'));
 	}
+	
+	$mime->filer->purge; # Removes the files used by the MIME tool.
 	
 	return(@lines, ht_udiv());
 } # END $k->do_view

@@ -31,7 +31,7 @@ Requested Features:
 
 1.0
 	- Converted from Mail::Cclient to Mail::IMAPClient.
-	- 
+	- Fixed a bug that made HTML only mail display as plain text.
 
 
 0.77 Mon Dec 15 21:32:54 CST 2008

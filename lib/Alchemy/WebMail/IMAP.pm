@@ -5,8 +5,8 @@ use strict;
 use Encode qw(decode);
 use Mail::IMAPClient;
 use MIME::Entity;
+use MIME::Parser;
 use Net::SMTP;
-#use POSIX qw(strftime);
 
 use KrKit::Validate;
 
@@ -68,9 +68,7 @@ sub decode_iso {
 	my ($self, $string) = @_;
 
 	# Decodes UTF8 stuff in a string.
-	$string = decode('MIME-Header', $string);
-
-	return($string);
+	return(decode('MIME-Header', $string));
 } # END $imap->decode_iso
 
 #-------------------------------------------------
@@ -79,7 +77,7 @@ sub decode_iso {
 sub error {
 	my $self = shift;
 
-	return((defined $self->{error}) ? $self->{error} : undef );
+	return((defined $self->{error}) ? $self->{error} : undef);
 } # END $imap->error
 
 #-------------------------------------------------
@@ -260,7 +258,6 @@ sub message_append {
 	$flag = '\Seen' if ( ! is_text( $flag ) );
 
 	my ( %seen, $nuid );
-	my $date = $self->{imap}->Rfc822_date();
 
 	# Get the list of uid's in the folder.
 	#$self->folder_open( $folder );
@@ -272,8 +269,8 @@ sub message_append {
 	}
 
 	# Save a message to a particular folder.
-	$self->{imap}->append( 	$self->{hostproto}.$folder, 
-							$message->stringify, $date, $flag );
+	$self->{imap}->append($folder, $message->stringify, 
+							$self->{imap}->Rfc822_date(), $flag );
 
 	# Get the uid's now. 
 	#$self->folder_open( $folder );
@@ -290,21 +287,6 @@ sub message_append {
 
 	return( $nuid );
 } # END $imap->message_append
-
-#-------------------------------------------------
-# $imap->message_clearflag( $uid, @flags );
-#-------------------------------------------------
-sub message_clearflag {
-	my ( $self, $uid, @flags ) = @_;
-
-	return() if ( ! is_integer( $uid ) );
-	
-	for my $flag ( @flags ) {
-		$self->{imap}->clearflag( $uid, $flag, 'uid' );
-	}
-
-	return();
-} # END $imap->message_clearflag
 
 #-------------------------------------------------
 # $imap->message_copy($original_folder, $uid, $folder)
@@ -349,71 +331,79 @@ sub message_decode {
 
 	return(0) if (! is_text($folder));
 	return(0) if (! is_integer($uid));
-
-	my $body = $self->{imap}->get_bodystructure($uid);
-	my $envelope = $self->{imap}->get_envelope($uid);
-
-	my %msg;
-
-#	my %msg = ( 'head' 	=> $entity->head,
-#				'body'	=> $entity->bodyhandle	);
-#
-#	( $msg{type}, $msg{subtype} ) = split( '/', $msg{head}->mime_type );
-#
-#	my $print 	= ( $msg{type} =~ /^(text|message)$/ ) ? 1 : 0 ;
-#	my $i 		= 0;
 	
-	for my $part ($body->parts()) {
-		my $type = $body->bodytype($part);
-		my $subtype = $body->bodysubtype($part);
+	$self->{imap}->select($folder);
 
-#		# This makes nested messages go.
-#		if ( $type =~ /multipart/ ) {
-#			push( @parts, $parts[$i]->parts );
-#			$i++;
-#			next;
-#		}
-#
-#		if ( $type =~ /^(text|message)$/ && ! $print )  {
-#			# Override the core one if we should. ie it's multipart
-#			$msg{body} 		= $item->bodyhandle; 
-#			$msg{type} 		= $type;
-#			$msg{subtype} 	= $subtype;
-#			$print 			= 1;
-#		}
-#		else { 					# Pick up the attachment info.
-#			# This line makes it skip the parts added by the e-mail
-#			# clients and not real attachments, the html version of
-#			# things and the like. ( Or I think it would. )
-#			#next if ( ! defined $item->head->recommended_filename );
-#
-#			$msg{attach}{$i}{name} 	= $item->head->recommended_filename;
-#			$msg{attach}{$i}{type} 	= "$type/$subtype";
-#			$msg{attach}{$i}{fh} 	= $item->bodyhandle; # May not exist.
-#			$msg{attach}{$i}{path} 	= $item->bodyhandle->path; 
-#			$msg{attach}{$i}{size}	= 0;
-#
-#			if ( defined $item->bodyhandle ) { 	# may not exist
-#				$msg{attach}{$i}{size} = int( -s $item->bodyhandle->path );
-#			}
-#
-#			if ( ! defined $msg{attach}{$i}{name} ) { # may not exist
-##				next if ( $subtype =~ /plain/ );
-#				# drops plain text in  signed multiparts.
-#
-#				if ( $subtype =~ /html/ ) {
-#					$msg{attach}{$i}{name} = 'View HTML Version of Message';
-#				}
-#				else {
-#					$msg{attach}{$i}{name} = 'Unknown.'. $subtype;
-#				}
-#			}
-#		}
-#
-#		$i++;
+	my $mime = new MIME::Parser; 
+
+	$mime->output_dir($self->{temp});
+	$mime->output_to_core(0);
+	$mime->tmp_to_core(0);
+	$mime->extract_nested_messages('REPLACE');
+
+	# Get the decoded message and Start decoding.
+	my $entity = $mime->parse_data($self->{imap}->message_string($uid));
+
+	my %msg = ('head' => $entity->head, 'body' => $entity->bodyhandle);
+
+	($msg{type}, $msg{subtype}) = split('/', $msg{head}->mime_type);
+
+	my $print = ($msg{type} =~ /^(text|message)$/) ? 1 : 0 ;
+	my $i = 0;
+
+	my @parts = $entity->parts();
+
+	for my $item (@parts) {
+
+ 		my ($type, $subtype) = split('/', $item->head->mime_type);
+
+		# This makes nested messages go.
+		if ($type =~ /multipart/) {
+			push(@parts, $parts[$i]->parts);
+			$i++;
+			next;
+		}
+
+		if ($type =~ /^(text|message)$/ && ! $print)  {
+			# Override the core one if we should. ie it's multipart
+			$msg{body} 		= $item->bodyhandle; 
+			$msg{type} 		= $type;
+			$msg{subtype} 	= $subtype;
+			$print 			= 1;
+		}
+		else { 					# Pick up the attachment info.
+			# This line makes it skip the parts added by the e-mail
+			# clients and not real attachments, the html version of
+			# things and the like. ( Or I think it would. )
+			#next if ( ! defined $item->head->recommended_filename );
+
+			$msg{attach}{$i}{name} 	= $item->head->recommended_filename;
+			$msg{attach}{$i}{type} 	= "$type/$subtype";
+			$msg{attach}{$i}{fh} 	= $item->bodyhandle; # May not exist.
+			$msg{attach}{$i}{path} 	= $item->bodyhandle->path; 
+			$msg{attach}{$i}{size}	= 0;
+
+			if ( defined $item->bodyhandle ) { 	# may not exist
+				$msg{attach}{$i}{size} = int(-s $item->bodyhandle->path);
+			}
+
+			if ( ! defined $msg{attach}{$i}{name} ) { # may not exist
+#				next if ( $subtype =~ /plain/ );
+				# drops plain text in  signed multiparts.
+
+				if ( $subtype =~ /html/ ) {
+					$msg{attach}{$i}{name} = 'View HTML Version of Message';
+				}
+				else {
+					$msg{attach}{$i}{name} = 'Unknown.'. $subtype;
+				}
+			}
+		}
+
+		$i++;
 	}
-	
-	return(1, $envelope, $body);
+
+	return(1, $mime, \%msg);
 } # END $imap->message_decode
 
 #-------------------------------------------------
@@ -434,9 +424,9 @@ sub message_delete {
 
 	$self->{error} = undef;
 	
-	$self->folder_open( $folder );
+	$self->folder_open($folder);
 
-	$self->{imap}->setflag( "$uid", '\Deleted', 'uid' );
+	$self->{imap}->set_flag('Deleted', $uid);
 
 	$self->{imap}->expunge();
 
@@ -498,11 +488,9 @@ sub message_mime {
 	}
 
 	my @attachments;
-	#my $date 		= strftime( "%a, %d %b %Y %H:%M:%S %z", localtime( ) );
-	my $date = $self->{imap}->Rfc822_date();
 	my %msg 		= ( 'To' 			=> $in->{to},
 						'From' 			=> $in->{from},
-						'Date'			=> $date,
+						'Date'			=> $self->{imap}->Rfc822_date(),
 						'Reply-To' 		=> $in->{replyto},
 						'Cc' 			=> $in->{cc},
 						'Bcc' 			=> $in->{bcc},
@@ -835,12 +823,6 @@ Appends a message to the C<$folder> with the C<$flag> set. C<$flag> will
 default to "\Seen" if not set. The C<$message> is the messasge object
 returned by the C<message_mime> method.
 
-=item $imap->message_clearflag( $uid, @flags )
-
-Clears the flags specified in the C<@flags> array from the C<$uid>.
-Valid flags include, but are not limited to '\Seen', '\Draft',
-'\Answered', or any other valid IMAP flag. 
-
 =item $imap->message_decode( $folder, $uid )
 
 Decodes the specified message, C<$uid>, in the given C<$folder>. This
@@ -890,8 +872,7 @@ error string is set in the event of failure.
 =item $imap->message_setflag( $folder, $uid, @flags )
 
 Sets the flag on a particular message based on it's C<$uid> in a given
-C<$folder>, Valid flags are noted on the C<message_clearflag> method.
-Returns C<1> on success, C<0> on failure.
+C<$folder>.  Returns C<1> on success, C<0> on failure.
 
 =item $imap->message_sort( $folder, $field, $order )
 

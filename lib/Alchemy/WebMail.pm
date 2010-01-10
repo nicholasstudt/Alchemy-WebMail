@@ -21,38 +21,38 @@ our @ISA = ('KrKit::Handler');
 # $self->_cleanup( $r )
 #-------------------------------------------------
 sub _cleanup {
-	my ($site, $r) = @_;
+	my ($k, $r) = @_;
  	
-	$site->SUPER::_cleanup($r);
+	$k->SUPER::_cleanup($r);
 
-	if (defined $$site{imap}) {
+	if (defined $$k{imap}) {
 		# Generate the folder list. ( new mail count )
 		my @l;
-		my %folders 	= $$site{imap}->folder_list();	
-		my $real_inbox 	= $$site{imap_inbox};
+		my %folders 	= $$k{imap}->folder_list();	
+		my $real_inbox 	= $$k{imap_inbox};
 
 		# Try the inbox if we don't have it.
 		if (! defined $folders{$real_inbox}) {
-			$$site{imap}->folder_subscribe($real_inbox);
+			$$k{imap}->folder_subscribe($real_inbox);
 		}
 
 		# This forces the Inbox to the top, and sorts everything after it.
 		for my $fldr ( sort { ($a eq $real_inbox) ? -1 : $a cmp $b }
 							(keys %folders) ) {
 		
-			my $mask = $site->inbox_mask( $fldr );
+			my $mask = $k->inbox_mask( $fldr );
 
-			if ($$site{count_mail} || $fldr eq $$site{imap_inbox}) {
-				my $count = $$site{imap}->folder_nmsgs( $fldr );
+			if ($$k{count_mail} || $fldr eq $$k{imap_inbox}) {
+				my $count = $$k{imap}->folder_nmsgs( $fldr );
 
 				$mask .= " ($count)";
 			}
 			
-			push(@l, ht_li(undef, ht_a("$$site{mail_root}/main/$fldr", $mask)));
+			push(@l, ht_li(undef, ht_a("$$k{mail_root}/main/$fldr", $mask)));
 		}
 
-		$$site{'body_aux'} = ht_lines(@l);
-		$$site{imap}->close(); 			# close connection.
+		$$k{'body_aux'} = ht_lines(@l);
+		$$k{imap}->close(); 			# close connection.
 	}
 
 	return();
@@ -62,53 +62,51 @@ sub _cleanup {
 # $self->_init( $r )
 #-------------------------------------------------
 sub _init {
-	my ( $site, $r ) = @_;
+	my ( $k, $r ) = @_;
 	
-	$site->SUPER::_init( $r );
+	$k->SUPER::_init( $r );
 
-	$$site{'remote_ip'}		= $r->connection->remote_ip;
-	$$site{'imap_domain'}	= $r->dir_config('WM_Domain') 	|| '';
-	$$site{'imap_host'}		= $r->dir_config('WM_Host')		|| 'localhost';
-	$$site{'imap_proto'}	= $r->dir_config('WM_Proto') 	|| 'imap/notls';
+	$$k{'remote_ip'}	= $r->connection->remote_ip;
+	$$k{'imap_domain'}	= $r->dir_config('WM_Domain') || '';
+	$$k{'imap_host'}	= $r->dir_config('WM_Host') || 'localhost';
+	$$k{'imap_proto'}	= $r->dir_config('WM_Proto') || 'imap/notls';
 
 	# Inbox must be set to "INBOX" otherwise it duplicates.
-	$$site{'mask_inbox'}	= $r->dir_config('WM_Inbox_Mask');
-	$$site{'imap_inbox'}	= $r->dir_config('WM_Inbox') 	|| 'INBOX';
-	$$site{'imap_drafts'}	= $r->dir_config('WM_Draft') 	|| 'Drafts';
-	$$site{'imap_sent'}		= $r->dir_config('WM_Sent') 	|| 'Sentmail';
-	$$site{'imap_trash'}	= $r->dir_config('WM_Trash') 	|| 'Trash';
+	$$k{'mask_inbox'}	= $r->dir_config('WM_Inbox_Mask');
+	$$k{'imap_inbox'}	= $r->dir_config('WM_Inbox') || 'INBOX';
+	$$k{'imap_drafts'}	= $r->dir_config('WM_Draft') || 'Drafts';
+	$$k{'imap_sent'}	= $r->dir_config('WM_Sent') || 'Sentmail';
+	$$k{'imap_trash'}	= $r->dir_config('WM_Trash') || 'Trash';
 
-	$$site{'cookie_name'}	= $r->dir_config('WM_CookieName') || 'WebMail';
-	$$site{'cookie_path'}	= $r->dir_config('WM_CookiePath') || '/';
-	$$site{'secretkey'}		= $r->dir_config('WM_SecretKey');
-	$$site{'cipher'}		= $r->dir_config('WM_Cipher');
-	$$site{'x-mailer'}		= $r->dir_config('WM_X-Mailer') 
-								|| "WebMail $VERSION";
+	$$k{'cookie_name'}	= $r->dir_config('WM_CookieName') || 'WebMail';
+	$$k{'cookie_path'}	= $r->dir_config('WM_CookiePath') || '/';
+	$$k{'secretkey'}	= $r->dir_config('WM_SecretKey');
+	$$k{'cipher'}		= $r->dir_config('WM_Cipher');
+	$$k{'x-mailer'}		= $r->dir_config('WM_X-Mailer') || "WebMail $VERSION";
 	
-	$$site{'max_sub'} 		= $r->dir_config('WM_Subject_Max') || '0';
-	$$site{'count_mail'} 	= $r->dir_config('WM_Count_Messages') || '0';
+	$$k{'max_sub'} 		= $r->dir_config('WM_Subject_Max') || '0';
+	$$k{'count_mail'} 	= $r->dir_config('WM_Count_Messages') || '0';
 
-	$$site{'mail_root'}		= $r->dir_config('WM_MailRoot') 	|| '/';
-	$$site{'mail_fp'}		= $r->dir_config('WM_MailFP') 		|| '/';
-	$$site{'address_root'}	= $r->dir_config('WM_AddressRoot') 	|| '/';
-	$$site{'group_root'}	= $r->dir_config('WM_AGroupRoot') 	|| '/';
-	$$site{'folder_root'}	= $r->dir_config('WM_FolderRoot') 	|| '/';
-	$$site{'pref_root'}		= $r->dir_config('WM_PrefRoot') 	|| '/';
-	$$site{'login_root'}	= $r->dir_config('WM_LoginRoot')	|| '/';
-	$$site{'new_icon'}		= $r->dir_config('WM_NewIcon') 		|| 'New';
-	$$site{'reply_icon'}	= $r->dir_config('WM_ReplyIcon') 	|| 'R';
-	$$site{'addr_icon'}		= $r->dir_config('WM_ABookIcon') 	
-								|| 'Address book';
+	$$k{'mail_root'}	= $r->dir_config('WM_MailRoot') || '/';
+	$$k{'mail_fp'}		= $r->dir_config('WM_MailFP') || '/';
+	$$k{'address_root'}	= $r->dir_config('WM_AddressRoot') || '/';
+	$$k{'group_root'}	= $r->dir_config('WM_AGroupRoot') || '/';
+	$$k{'folder_root'}	= $r->dir_config('WM_FolderRoot') || '/';
+	$$k{'pref_root'}	= $r->dir_config('WM_PrefRoot') || '/';
+	$$k{'login_root'}	= $r->dir_config('WM_LoginRoot') || '/';
+	$$k{'new_icon'}		= $r->dir_config('WM_NewIcon') || 'New';
+	$$k{'reply_icon'}	= $r->dir_config('WM_ReplyIcon') || 'R';
+	$$k{'addr_icon'}	= $r->dir_config('WM_ABookIcon') || 'Address book';
 
 	# This is used for the Preferences Page.
-	$$site{'p_sessopt'} 	= $r->dir_config('WM_Pref_Session_Opt');
+	$$k{'p_sessopt'} 	= $r->dir_config('WM_Pref_Session_Opt');
 
 	# Validate WM_Pref_Session_Opt
-	if (! is_text($$site{'p_sessopt'})) {
-		$$site{'p_sessopt'} = 'session,2:00,8:00';
+	if (! is_text($$k{'p_sessopt'})) {
+		$$k{'p_sessopt'} = 'session,2:00,8:00';
 	}
 	else {
-		for my $sopt (split(',', $$site{'p_sessopt'})) {
+		for my $sopt (split(',', $$k{'p_sessopt'})) {
 
 			next if ($sopt =~ /session/i);
 
@@ -129,106 +127,106 @@ sub _init {
 	}
 
 	# Must happen at last moment before needed. ( after frame is set )
-	$$site{'user'}	= '';
-	$$site{'pass'}	= '';
+	$$k{'user'}	= '';
+	$$k{'pass'}	= '';
 
 	# Grab the cookie and figure it out.
 	my $cookie = appbase_cookie_retrieve($r);
 
 	# Make sure we have a mostly good cookie for top of if.
-	if ( ( is_text( $$cookie{ $$site{cookie_name} } ) ) && 
-		 ( $$cookie{ $$site{cookie_name} } !~ /loggedout/i ) ) {
-
-		my $cookie_text = $$cookie{ $$site{cookie_name} };
+	if ( is_text($$cookie{$$k{cookie_name}}) && 
+		 ( $$cookie{ $$k{cookie_name} } !~ /loggedout/i ) ) {
 
 		# decrypt the cookie.
-		($$site{user}, $$site{pass}) = $site->cookie_decrypt( $cookie_text );
+		($$k{user}, $$k{pass}) = $k->cookie_decrypt($$cookie{$$k{cookie_name}});
 
 		# Set the username
-		$r->user( $$site{user} );
+		$r->user($$k{user});
 
 		# pull the core info from wm_users.
-		my $sth = db_query( $$site{dbh}, 'get user info',
+		my $sth = db_query($$k{dbh}, 'get user info',
 							'SELECT id, reply_include, true_delete, ',
 							'session_length, fldr_showcount, fldr_sortorder,',
 							'fldr_sortfield FROM wm_users WHERE username = ',
-							sql_str( $$site{user} ) );
+							sql_str($$k{user}));
 
-		( $$site{'user_id'}, $$site{'p_reply'}, $$site{'p_delete'}, 
-		  $$site{'p_sess_s'}, $$site{'p_fcount'}, $$site{'p_sorder'}, 
-		  $$site{'p_sfield'} ) = db_next( $sth );
+		($$k{'user_id'}, $$k{'p_reply'}, $$k{'p_delete'}, 
+		  $$k{'p_sess_s'}, $$k{'p_fcount'}, $$k{'p_sorder'}, 
+		  $$k{'p_sfield'}) = db_next($sth);
 	
 		db_finish($sth);
 
 		# re-set the cookie.
-		$$site{p_sess} 	= $site->s2hm($$site{'p_sess_s'});
+		$$k{p_sess} = $k->s2hm($$k{'p_sess_s'});
 
-		my $crypt 		= $site->cookie_encrypt($$site{user}, $$site{pass}); 
-		my $expire 		= ($$site{p_sess_s} > 0) ? $$site{p_sess_s} : undef;
+		my $crypt = $k->cookie_encrypt($$k{user}, $$k{pass}); 
+		my $expire = ($$k{p_sess_s} > 0) ? $$k{p_sess_s} : undef;
 
-		appbase_cookie_set($r, $$site{cookie_name}, $crypt, $expire, 
-							$$site{cookie_path});
+		appbase_cookie_set($r, $$k{cookie_name}, $crypt, $expire, 
+							$$k{cookie_path});
 
 		# log in to the imap server.
-		$$site{imap} = Alchemy::WebMail::IMAP->new($$site{imap_host}, 
-									$$site{imap_proto}, $$site{imap_inbox},
-									$$site{user}, $$site{pass},
-									$$site{file_tmp});
+		$$k{imap} = Alchemy::WebMail::IMAP->new($$k{imap_host}, 
+									$$k{imap_proto}, $$k{imap_inbox},
+									$$k{user}, $$k{pass},
+									$$k{file_tmp});
 	}
 	else {
 		# These are used by the login page only.
-		$$site{'p_reply'}	= $r->dir_config( 'WM_Pref_Reply' );
-		if ( defined $$site{'p_reply'} ) {
-			$$site{'p_reply'} = ( $$site{'p_reply'} =~ /false/i ) ? 0 : 1;
+		$$k{'p_reply'}	= $r->dir_config('WM_Pref_Reply');
+
+		if (defined $$k{'p_reply'}) {
+			$$k{'p_reply'} = ( $$k{'p_reply'} =~ /false/i ) ? 0 : 1;
 		}
 		else {
-			$$site{'p_reply'} = 1;
+			$$k{'p_reply'} = 1;
 		}
 
-		$$site{'p_delete'}	= $r->dir_config( 'WM_Pref_True_Delete' );
-		if ( defined $$site{'p_delete'} ) {
-			$$site{'p_delete'} = ( $$site{'p_delete'} =~ /true/i ) ? 1 : 0;
+		$$k{'p_delete'}	= $r->dir_config('WM_Pref_True_Delete');
+
+		if (defined $$k{'p_delete'}) {
+			$$k{'p_delete'} = ($$k{'p_delete'} =~ /true/i) ? 1 : 0;
 		}
 		else {
-			$$site{'p_delete'} = 0;
+			$$k{'p_delete'} = 0;
 		}
 		
-		$$site{'p_sess'}	= $r->dir_config( 'WM_Pref_Session' );
-		$$site{'p_sess'} 	= '2:00' if ( ! is_text( $$site{'p_sess'} ) );
+		$$k{'p_sess'} = $r->dir_config('WM_Pref_Session');
+		$$k{'p_sess'} = '2:00' if ( ! is_text($$k{'p_sess'}) );
 	
 		# Make sure p_sess is in p_sessopt.
-		if ( $$site{'p_sessopt'} !~ /$$site{'p_sess'}/ ) {
-			die "WM_Pref_Session '$$site{p_sess}' not in  WM_Pref_Session_Opt";
+		if ( $$k{'p_sessopt'} !~ /$$k{'p_sess'}/ ) {
+			die "WM_Pref_Session '$$k{p_sess}' not in  WM_Pref_Session_Opt";
 		}
 	
-		$$site{'p_sess_s'}	= $site->hm2s( $$site{p_sess} ); 
+		$$k{'p_sess_s'}	= $k->hm2s( $$k{p_sess} ); 
 		
-		$$site{'p_fcount'}	= $r->dir_config( 'WM_Pref_FCount' );
-		$$site{'p_fcount'}	= 25 if ( ! is_integer( $$site{'p_fcount'} ) );
+		$$k{'p_fcount'}	= $r->dir_config( 'WM_Pref_FCount' );
+		$$k{'p_fcount'}	= 25 if ( ! is_integer( $$k{'p_fcount'} ) );
 		
 		# 1 DESC : 0 ASC
-		$$site{'p_fsordr'}	= $r->dir_config( 'WM_Pref_FSortOrder' ) || '';
-		$$site{'p_fsordr'} 	= ( $$site{'p_fsordr'} =~ /desc/i ) ? 1 : 0;
+		$$k{'p_fsordr'}	= $r->dir_config( 'WM_Pref_FSortOrder' ) || '';
+		$$k{'p_fsordr'} 	= ( $$k{'p_fsordr'} =~ /desc/i ) ? 1 : 0;
 		
-		$$site{'p_sfield'}	= $r->dir_config( 'WM_Pref_SortField' );
-		$$site{'p_sfield'} 	= 'date' if ( ! is_text( $$site{'p_sfield'} ) );
+		$$k{'p_sfield'}	= $r->dir_config( 'WM_Pref_SortField' );
+		$$k{'p_sfield'} 	= 'date' if ( ! is_text( $$k{'p_sfield'} ) );
 
 		# Ensure valid field.
-		if ( $$site{'p_sfield'} !~ /^(date|from|subject|size)$/ ) {
-			$$site{'p_sfield'} = 'date';
+		if ( $$k{'p_sfield'} !~ /^(date|from|subject|size)$/ ) {
+			$$k{'p_sfield'} = 'date';
 		}
 	
-		$$site{'p_ssent'}	= $r->dir_config( 'WM_Pref_SaveSent' ) 	|| '';
+		$$k{'p_ssent'}	= $r->dir_config( 'WM_Pref_SaveSent' ) 	|| '';
 	}
 
 	return();
 } # END $self->_init
 
 #-------------------------------------------------
-# $site->hm2s( $hours_minutes )
+# $k->hm2s( $hours_minutes )
 #-------------------------------------------------
 sub hm2s ($$) {
-	my ( $site, $hours_minutes ) = @_;
+	my ( $k, $hours_minutes ) = @_;
 
 	return( 0 ) if ( ! is_text( $hours_minutes ) );
 	return( 0 ) if ( $hours_minutes =~ /session/i );
@@ -241,80 +239,74 @@ sub hm2s ($$) {
 	$seconds += ( $hours * 60 * 60 );
 
 	return( $seconds );
-} # END $site->hm2s
+} # END $k->hm2s
 
 #-------------------------------------------------
 # $self->inbox_mask( $folder )
 #-------------------------------------------------
 sub inbox_mask {
-	my ( $site, $folder ) = @_;
+	my ( $k, $folder ) = @_;
 
-	return( '' ) 					if ( ! defined $folder );
-	return( $folder ) 				if ( ! defined $$site{mask_inbox} );
-	return( $$site{mask_inbox} ) 	if ( $folder =~ /^$$site{imap_inbox}$/i );
-	return( $folder );
+	return('') 				if (! defined $folder);
+	return($folder) 		if (! defined $$k{mask_inbox});
+	return($$k{mask_inbox}) if ($folder =~ /^$$k{imap_inbox}$/i);
+	return($folder);
 } # END $self->inbox_mask
 
 #-------------------------------------------------
-# $site->s2hm( $seconds ))
+# $k->s2hm($seconds)
 #-------------------------------------------------
 sub s2hm ($$) {
-	my ( $site, $seconds ) = @_;	
+	my ($k, $seconds) = @_;	
 
-	return( 'session' ) if ( ! is_integer( $seconds ) );
-	return( 'session' ) if ( $seconds <= 0 );
+	return('session') if (! is_integer($seconds));
+	return('session') if ($seconds <= 0);
 
-	my ( $hours, $minutes ) = ( 0, 0 );
+	my ($hours, $minutes) = (0, 0);
 
 	$minutes 	= $seconds / 60;	
 	$hours 		= $minutes / 60;
-	my $min 	= $minutes % 60;
 
-	return( sprintf( "%d:%02d" , $hours, $min ) );
-} # END $site->s2hm
+	return(sprintf("%d:%02d" , $hours, $minutes % 60));
+} # END $k->s2hm
 
 #-------------------------------------------------
-# $site->cookie_encrypt( $user, $pass )
+# $k->cookie_encrypt($user, $pass)
 #-------------------------------------------------
 sub cookie_encrypt {
-	my ( $site, $user, $pass ) = @_;
+	my ($k, $user, $pass) = @_;
 
-	$user 	= '' if ( ! is_text( $user ) );
-	$pass	= '' if ( ! is_text( $pass ) );
+	$user = '' if (! is_text($user));
+	$pass = '' if (! is_text($pass));
 
-	my $c = Crypt::CBC->new( {	'key' 		=> $$site{secretkey},
-								'cipher' 	=> $$site{cipher}, 		} );
-
-	my $ciphertext = $c->encrypt_hex( "$user:;:$pass" );
-
-	return( $ciphertext );
+	my $c = Crypt::CBC->new({'key' => $$k{secretkey}, 'cipher' => $$k{cipher}});
+	
+	return($c->encrypt_hex("$user:;:$pass"));
 } # END cookie_encrypt
 
 #-------------------------------------------------
-# $site->cookie_decrypt( $encrypted_text )
+# $k->cookie_decrypt( $encrypted_text )
 #-------------------------------------------------
 sub cookie_decrypt {
-	my ( $site, $encrypted ) = @_;
+	my ( $k, $encrypted ) = @_;
 	
-	my $c = Crypt::CBC->new ( {	'key' 		=> $$site{secretkey},
-								'cipher' 	=> $$site{cipher} 		} );
+	my $c = Crypt::CBC->new({'key' => $$k{secretkey}, 'cipher' => $$k{cipher}});
 
-	my ( $user, $pass ) = split( ':;:', $c->decrypt_hex( $encrypted ) );
-	
-} # END $site->cookie_decrypt
+	return(split(':;:', $c->decrypt_hex($encrypted)));
+} # END $k->cookie_decrypt
 
 #-------------------------------------------------
-# $site->valid_mbox( $mbox )
+# $k->valid_mbox( $mbox )
 #-------------------------------------------------
 sub valid_mbox {
-	my ( $site, $mbox ) = @_;
+	my ( $k, $mbox ) = @_;
 
-	return( 0 ) if ( ! is_text( $mbox ) );
+	return(0) if (! is_text($mbox));
 
-	return( 0 ) if ( $mbox =~ /\*|%|#|&/ );
+	return(0) if ($mbox =~ /\*|%|#|&/);
 
-	return( 1 );
-} # END $site->valid_mbox
+	return(1);
+} # END $k->valid_mbox
 
 # EOF
 1;
@@ -615,23 +607,23 @@ Called by the core handler to clean up after each page request.
 
 Called by the core handler to initialize each page request.
 
-=item $site->hm2s( $hours_minutes )
+=item $k->hm2s( $hours_minutes )
 
 Converts C<$hours_minutes> to seconds.
 
-=item $site->s2hm( $seconds )
+=item $k->s2hm( $seconds )
 
 Converts C<$seconds> to a hours and minutes duration in the from HH:MM.
 
-=item $site->cookie_encrypt( $user, $pass )
+=item $k->cookie_encrypt( $user, $pass )
 
 Encrypts the C<$user> and C<$pass> and returns the encrypted text.
 
-=item $site->cookie_decrypt( $encrypted_text )
+=item $k->cookie_decrypt( $encrypted_text )
 
 Returns C<$user> and C<$password> decode fom the C<$encrypted_text>.
 
-=item $site->valid_mbox( $mbox )
+=item $k->valid_mbox( $mbox )
 
 Returns C<1> or C<0> depending on C<$mbox> being a syntacticly valid
 folder name.
