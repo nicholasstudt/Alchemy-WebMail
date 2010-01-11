@@ -29,31 +29,32 @@ sub attachments_checkvals {
 
 	if ($in->{attach}) {
 		if (! is_text($in->{newfile})) {
-			push(@errors, ht_li(undef, 'Select a file to upload.'));
+			push(@errors, 'Select a file to upload.');
 		}
 		else { # Check the file size.
 			my $upload 	= $apr->upload('newfile');
 			my $size 	= $upload->size;
 
 			if (! defined $size || $size < 1) {
-				push(@errors, ht_li(undef, 'Select a file to upload.'));
+				push(@errors, 'Select a file to upload.');
 			}
 		}
 	}
 
 	if ($in->{remove}) {
 		if (! is_text($in->{attached})) {
-			push(@errors, ht_li(undef, 'Select a file to remove.'));
+			push(@errors, 'Select a file to remove.');
 		}
 	}
 
 	if (! $in->{attach} && ! $in->{remove} && ! $in->{submit}) {
-		push(@errors, ht_li(undef, 'Unseen error.'));
+		push(@errors, 'Unseen error.');
 	}
 
 	if (@errors) {
 		return(ht_div({ 'class' => 'error' }, 
-						ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+						ht_h(1, 'Errors:'),
+						ht_ul(undef, map {ht_li(undef, $_)} @errors)));
 	}
 
 	return();
@@ -116,21 +117,24 @@ sub compose_checkvals {
 	my @errors;
 
 	if (! is_integer($in->{role})) {
-		push(@errors, ht_li(undef, 'Select a role to use.'));
+		push(@errors, 'Select a role to use.');
 	}
 
 	if (! is_email($in->{to})) {
-		push(@errors, ht_li(undef, 'Enter a valid "To" e-mail address.'));
+		push(@errors, 'Enter a valid "To" e-mail address.');
 	}
 
 	if (! is_text($in->{message})) {
-		push(@errors, ht_li(undef, 'Enter a message for this e-mail.'));
+		push(@errors, 'Enter a message for this e-mail.');
 	}
 
 	if (@errors) {
 		return(ht_div({ 'class' => 'error' }, 
-				ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+						ht_h(1, 'Errors:'),
+						ht_ul(undef, map {ht_li(undef, $_)} @errors)));
 	}
+
+	return();
 } # END compose_checkvals
 
 #-------------------------------------------------
@@ -377,22 +381,21 @@ sub do_attachments {
 } # END $k->do_attachments
 
 #-------------------------------------------------
-# $k->do_compose( $r, $folder, $uid )
+# $k->do_compose($r, $folder, $uid)
 #-------------------------------------------------
 sub do_compose {
-	my ( $k, $r, $folder, $uid ) = @_;
+	my ($k, $r, $folder, $uid) = @_;
 
-	my $apr 			= Apache2::Request->new( $r );
-	my $in 				= $k->param( $apr );
+	my $in = $k->param( Apache2::Request->new($r) );
 
 	$$k{page_title}	.= 'Compose message';
-	$folder 			= $$k{imap_inbox} 	if ( ! defined $folder );
+	$folder = $$k{imap_inbox} if (! defined $folder);
  
- 	if ( $in->{cancel} ) {
-		return( $k->_relocate( $r, "$$k{rootp}/main/$folder" ) );
+ 	if ($in->{cancel}) {
+		return($k->_relocate($r, "$$k{rootp}/main/$folder"));
 	}
 
-	if ( $in->{draft} ) {
+	if ($in->{draft}) {
 		$in->{want_sig} = 0; # Kill the sig on a draft.
 
 		# Set the from address correctly.
@@ -400,66 +403,61 @@ sub do_compose {
 		$in->{from}	= (is_text($name)) ? "\"$name\" <$from>" : $from;
 
 		# Save to the drafts folder.
-		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in );
+		my ($message, $attach) = $$k{imap}->message_mime($k, $in);
 	
 		# What about the From address ?
-		$$k{imap}->message_append( $$k{imap_drafts}, $message, '\Seen' );
+		$$k{imap}->message_append($$k{imap_drafts}, $message, '\Seen');
 
 		# Unlink the files since they have been put in the draft.
-		for my $file ( @{$attach} ) {
-			unlink( $file );
-		}
+		unlink(@{$attach});
 
-		return( $k->_relocate( $r, "$$k{rootp}/main/$folder" ) );
+		return($k->_relocate($r, "$$k{rootp}/main/$folder"));
 	}
 
-	if ( $in->{attach} ) {
+	if ($in->{attach}) {
 		$in->{want_sig} = 0; # Kill the sig on a draft.
 		
 		# Set the from address correctly.
 		my ($name, $from, $sentmail, $sig) = $k->role_info($in->{role});	
 		$in->{from}	= (is_text($name)) ? "\"$name\" <$from>" : $from;
 
-		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in, 0 );
+		my ($message, $attach) = $$k{imap}->message_mime($k, $in, 0);
 	
 		my $uid = $$k{imap}->message_append($$k{imap_drafts}, 
 												$message, '\Draft');
 
-		return( $k->_relocate( $r, 
-			"$$k{rootp}/attachments/$$k{imap_drafts}/$folder/$uid" ) );
+		return($k->_relocate($r, 
+			"$$k{rootp}/attachments/$$k{imap_drafts}/$folder/$uid"));
 	}
 
-	if (! (my @errors = $k->compose_checkvals($in))) {
-
-		# Look up the role information.
-		my ( $name, $from, $sentmail, $sig ) = $k->role_info( $in->{role} );	
-		$in->{from}	= ( is_text( $name ) ) ? "\"$name\" <$from>" : $from;
-		$in->{sig} 	= $sig;
-
-		# Generate the email content
-		my ( $message, $attach ) = $$k{imap}->message_mime( $k, $in );
-
-		# Send the email.
-		if ( ! $$k{imap}->message_send( $k, $message ) ) {
-			return( 'Unable to send message: '. $$k{imap}->error() );
-		}
-
-		# Figure out if I need to save the sentmail.
-		$$k{imap}->message_append( $sentmail, $message, '\Seen' );
-
-		if ( is_number( $uid ) ) {
-			$$k{imap}->message_setflag( $folder, $uid, '\Answered' );
-		}
-
-		for my $file ( @{$attach} ) {
-			unlink( $file );
-		}
-
-		return($k->_relocate($r, "$$k{rootp}/main/$folder"));
-	}
-	else {
+	if (my @errors = $k->compose_checkvals($in)) {
 		return(($r->method eq 'POST' ? @errors : ''), $k->compose_form($in));
-	}
+	} 
+	
+	# Look up the role information.
+	my ($name, $from, $sentmail, $sig) = $k->role_info($in->{role});	
+	
+	$in->{from}	= is_text($name) ? "\"$name\" <$from>" : $from;
+	$in->{sig} 	= $sig; 
+	
+	# Generate the email content
+	my ($message, $attach) = $$k{imap}->message_mime($k, $in); 
+	
+	# Send the email.
+	if (! $$k{imap}->message_send($k, $message)) {
+		return('Unable to send message: '. $$k{imap}->error());
+	} 
+	
+	# Figure out if I need to save the sentmail.
+	$$k{imap}->message_append($sentmail, $message, '\Seen'); 
+	
+	if (is_number($uid)) {
+		$$k{imap}->message_setflag($folder, $uid, '\Answered');
+	} 
+	
+	unlink(@{$attach}); 
+	
+	return($k->_relocate($r, "$$k{rootp}/main/$folder"));
 } # END $k->do_compose
 
 #-------------------------------------------------
@@ -510,12 +508,13 @@ sub do_delete {
 sub do_main {
 	my ($k, $r, $folder, $field, $order, $offset) = @_;
 
+	my @lines;
 	my %ln; # Links for the headers.
 	my $in 				= $k->param( Apache2::Request->new($r) );
 	$folder 			= $$k{imap_inbox} 	if (! is_text($folder));
-	$field 				= $$k{p_sfield} 		if (! is_text($field));
-	$order 				= $$k{p_sorder} 		if (! is_integer($order));
-	$offset 			= 0 					if (! is_integer($offset));
+	$field 				= $$k{p_sfield} 	if (! is_text($field));
+	$order 				= $$k{p_sorder} 	if (! is_integer($order));
+	$offset 			= 0 				if (! is_integer($offset));
 	$$k{page_title} 	.= $k->inbox_mask($folder). ' view';
 	my $draft 			= ($folder eq $$k{imap_drafts}) ? 1 : 0;
 	my $sentmail		= ($folder eq $$k{imap_sent}) ? 1 : 0;
@@ -524,7 +523,6 @@ sub do_main {
 	my $clkjs = 	q!onClick="var e, i=0, o=document.fldr; while (e=o[i++]) !.
 					q!if (e.type == 'checkbox') e.checked=o.mstr.checked;"!;
 
-	my @lines;
 	my @folders = ('', 'Move to folder...');
 	my %fldrs 	= $$k{imap}->folder_list();
 

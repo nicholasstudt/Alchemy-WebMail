@@ -7,6 +7,7 @@ use Mail::IMAPClient;
 use MIME::Entity;
 use MIME::Parser;
 use Net::SMTP;
+use POSIX qw(strftime);
 
 use KrKit::Validate;
 
@@ -247,45 +248,23 @@ sub folder_unsubscribe {
 } # END $imap->folder_unsubscribe
 
 #-------------------------------------------------
-# $imap->message_append( $folder, $message, $flag )
+# $imap->message_append($folder, $message, $flag)
 #-------------------------------------------------
 sub message_append {
-	my ( $self, $folder, $message, $flag ) = @_;
+	my ($self, $folder, $message, $flag) = @_;
 
 	# Don't do anything if we do not have a save folder.
-	return( undef ) if ( ! is_text( $folder ) );
+	return(undef) if (! is_text($folder));
 
-	$flag = '\Seen' if ( ! is_text( $flag ) );
+	$flag = '\Seen' if (! is_text($flag));
 
-	my ( %seen, $nuid );
-
-	# Get the list of uid's in the folder.
-	#$self->folder_open( $folder );
-	my $nmsg = $self->folder_nmsgs($folder);
-	
-	for my $msg ( 1..$nmsg ) {
-		my $uid 	= $self->{imap}->uid( $msg );
-		$seen{$uid} = 1;
-	}
+	my $date = strftime("%d-%b-%Y %H:%M:%S %z", localtime());
 
 	# Save a message to a particular folder.
-	$self->{imap}->append($folder, $message->stringify, 
-							$self->{imap}->Rfc822_date(), $flag );
-
-	# Get the uid's now. 
-	#$self->folder_open( $folder );
-	my $nnmsg = $self->folder_nmsgs($folder);
-
-	for my $msg ( 1..$nnmsg ) {
-
-		my $uid = $self->{imap}->uid( $msg );
-
-		next if ( defined $seen{$uid} );
-
-		$nuid = $uid;
-	}
-
-	return( $nuid );
+	my $uid = $self->{imap}->append_string($folder, $message->stringify, 
+											$flag, $date);
+	
+	return($uid);
 } # END $imap->message_append
 
 #-------------------------------------------------
@@ -424,7 +403,7 @@ sub message_delete {
 
 	$self->{error} = undef;
 	
-	$self->folder_open($folder);
+	$self->{imap}->select($folder);
 
 	$self->{imap}->set_flag('Deleted', $uid);
 
@@ -466,40 +445,42 @@ sub message_header {
 } # END $imap->message_header
 
 #-------------------------------------------------
-# $imap->message_mime( $site, $in, $attach )
+# $imap->message_mime($site, $in, $attach)
 #-------------------------------------------------
 sub message_mime {
-	my ( $self, $site, $in, $attach ) = @_;
+	my ($self, $site, $in, $attach) = @_;
 
 	# Create a mime encoded version of the message which can be used to
 	# either send the message or save it to a folder.
 
 	# Maybe fix the newline problem.
-	$in->{message} 	= '' 			if ( ! defined $in->{message} );
+	$in->{message} 	= '' 			if (! defined $in->{message});
 	$in->{message} 	=~ s/\r\n/\n/g;
-	$in->{cc} 		= '' 			if ( ! defined $in->{cc} );
-	$in->{bcc} 		= '' 			if ( ! defined $in->{bcc} );
-	$in->{subject} 	= 'No Subject' 	if ( ! defined $in->{subject} );
-	$in->{replyto}	= ''			if ( ! defined $in->{replyto} );
-	$attach			= 1				if ( ! is_integer( $attach ) );
+	$in->{cc} 		= '' 			if (! defined $in->{cc});
+	$in->{bcc} 		= '' 			if (! defined $in->{bcc});
+	$in->{subject} 	= 'No Subject' 	if (! defined $in->{subject});
+	$in->{replyto}	= ''			if (! defined $in->{replyto});
+	$attach			= 1				if (! is_integer($attach));
 
 	if ( defined $in->{want_sig} && $in->{want_sig} ) {
 		$in->{message} .= "\n--\n$in->{sig}";
 	}
 
+	my $date = strftime("%d-%b-%Y %H:%M:%S %z", localtime());
+
 	my @attachments;
-	my %msg 		= ( 'To' 			=> $in->{to},
-						'From' 			=> $in->{from},
-						'Date'			=> $self->{imap}->Rfc822_date(),
-						'Reply-To' 		=> $in->{replyto},
-						'Cc' 			=> $in->{cc},
-						'Bcc' 			=> $in->{bcc},
-						'Subject' 		=> $in->{subject},
-						'X-Mailer' 		=> $$site{'x-mailer'},
-						'X-Origin-Ip:'	=> $$site{remote_ip},
-						'Type'			=> 'text/plain; format=flowed',
-						'Encoding'		=> '-SUGGEST',
-						'Data' 			=> [$in->{message}], );
+	my %msg = ( 'To' 			=> $in->{to},
+				'From' 			=> $in->{from},
+				'Date'			=> $date,
+				'Reply-To' 		=> $in->{replyto},
+				'Cc' 			=> $in->{cc},
+				'Bcc' 			=> $in->{bcc},
+				'Subject' 		=> $in->{subject},
+				'X-Mailer' 		=> $$site{'x-mailer'},
+				'X-Origin-Ip:'	=> $$site{remote_ip},
+				'Type'			=> 'text/plain; format=flowed',
+				'Encoding'		=> '-SUGGEST',
+				'Data' 			=> [$in->{message}], );
 
 	$msg{'In-Reply-To:'} = $in->{inreplyto} if ( defined $in->{inreplyto} );
 
@@ -654,16 +635,16 @@ sub message_send {
 sub message_setflag {
 	my ( $self, $folder, $uid, @flags ) = @_;
 
-	return( 0 ) if ( ! is_text( $folder ) );
-	return( 0 ) if ( ! is_integer( $uid ) );
+	return(0) if (! is_text($folder));
+	return(0) if (! is_integer($uid));
 	
-	$self->folder_open( $folder );
+	$self->{imap}->select($folder);
 	
-	for my $flag ( @flags ) {
-		$self->{imap}->setflag( $uid, $flag, 'uid' );
+	for my $flag (@flags) {
+		$self->{imap}->set_flag($flag, $uid);
 	}
 
-	return( 1 );
+	return(1);
 } # END $imap->message_setflag
 
 #-------------------------------------------------

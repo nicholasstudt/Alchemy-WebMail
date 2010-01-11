@@ -18,40 +18,40 @@ use KrKit::Validate;
 # Main Execution Begins Here                                         #
 ######################################################################
 sub handler : method {
-	my ( $self, $r ) = @_;
+	my ($self, $r) = @_;
 
-	return( Apache2::Const::DECLINED ) unless $r->is_initial_req;
+	return(Apache2::Const::DECLINED) unless $r->is_initial_req;
 
-	my $cname 		= $r->dir_config( 'WM_CookieName' )	|| 'WebMail';
-	my $login_page 	= $r->dir_config( 'WM_LoginRoot' ) 	|| '/';
-	my $cookies 	= appbase_cookie_retrieve( $r );
+	my $cname 		= $r->dir_config('WM_CookieName')	|| 'WebMail';
+	my $login_page 	= $r->dir_config('WM_LoginRoot') 	|| '/';
+	my $cookies 	= appbase_cookie_retrieve($r);
 	my $uri 		= $r->uri;
 	$uri 			=~ s/\//:/g;
 
-	if ( ! is_text( $$cookies{$cname} )  ) {
+	if (! is_text($$cookies{$cname})) {
 		
 		$r->note_basic_auth_failure; 
-    	$r->log_error(  '[client ', $r->connection->remote_ip,
-						'] user not found: ', $r->uri );
+    	$r->log_error('[client ', $r->connection->remote_ip,
+						'] user not found: ', $r->uri);
 
-		$r->headers_out->set( 'Location' => "$login_page/main/$uri" );
+		$r->headers_out->set('Location' => "$login_page/main/$uri");
 
-		$r->status( Apache2::Const::REDIRECT ); 
+		$r->status(Apache2::Const::REDIRECT); 
 
-		return( Apache2::Const::REDIRECT );
+		return(Apache2::Const::REDIRECT);
 	}
 
 	# check login would be the else case of the first if.
-	if ( $$cookies{$cname} =~ /^loggedout$/ ) {
+	if ($$cookies{$cname} =~ /^loggedout$/) {
 		
-		$r->headers_out->set( 'Location' => "$login_page/main/$uri" );
+		$r->headers_out->set('Location' => "$login_page/main/$uri");
 	
-		$r->status( Apache2::Const::REDIRECT ); 
+		$r->status(Apache2::Const::REDIRECT); 
 
-		return( Apache2::Const::REDIRECT );
+		return(Apache2::Const::REDIRECT);
 	}
 
-	return( Apache2::Const::OK ); 
+	return(Apache2::Const::OK); 
 } # END handler 
 
 # EOF

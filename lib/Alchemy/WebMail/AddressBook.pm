@@ -3,349 +3,324 @@ package Alchemy::WebMail::AddressBook;
 use strict;
 
 use KrKit::DB;
-use KrKit::HTML qw( :all );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
 use Alchemy::WebMail;
 
-our @ISA = ( 'Alchemy::WebMail' );
+our @ISA = ('Alchemy::WebMail');
 
 ############################################################
 # Functions                                                #
 ############################################################
 
 #-------------------------------------------------
-# $k->_checkvals( $in, $id )
+# $k->_checkvals($in, $id)
 #-------------------------------------------------
 sub _checkvals {
-	my ( $k, $in, $id ) = @_;
+	my ($k, $in, $id) = @_;
 
 	my @err;
 
-	if ( is_text( $in->{balk} ) ) {
-		push( @err, ht_li( {}, 'Please confirm address information.' ) );
+	if (is_text($in->{balk})) {
+		push(@err, 'Please confirm address information.');
 	}
 
-	if ( ! is_text( $in->{first} ) ) {
-		push( @err, ht_li( {}, 'Enter a first name for this entry.' ) );
+	if (! is_text($in->{first})) {
+		push(@err, 'Enter a first name for this entry.');
 	}
 
-	if ( ! is_email( $in->{email} ) ) {
-		push( @err, ht_li( {}, 'Enter a valid email address.' ) );
+	if (! is_email($in->{email})) {
+		push(@err, 'Enter a valid email address.');
 	}
 	else {
 		my $oemail;
 
-		if ( is_integer( $id ) ) {
-			my $sth = db_query( $$k{dbh}, 'get name',
+		if (is_integer($id)) {
+			my $sth = db_query($$k{dbh}, 'get name',
 								'SELECT email FROM wm_abook WHERE id = ',
-								sql_num( $id ), 'AND wm_user_id = ',
-								sql_num( $$k{user_id} ) );
+								sql_num($id), 'AND wm_user_id = ',
+								sql_num($$k{user_id}));
 	
-			( $oemail ) = db_next( $sth );
+			($oemail) = db_next($sth);
 	
 			db_finish( $sth );
 		}
 
 		# Make sure the name is unique to the user.
-		my $ath = db_query( $$k{dbh}, 'get name',
+		my $ath = db_query($$k{dbh}, 'get name',
 							'SELECT count(id) FROM wm_abook WHERE ',
-							'wm_user_id = ', sql_num( $$k{user_id} ),
-							' AND email = ', sql_str( $in->{email} ) );
+							'wm_user_id = ', sql_num($$k{user_id}),
+							' AND email = ', sql_str($in->{email}));
 
 		my ( $count ) = db_next( $ath );
 
 		db_finish( $ath );
 
-		if ( $count ) {
-			if ( defined $oemail ) {
-				if ( $oemail ne $in->{email} ) {
-					push( @err,	ht_li( {}, 	'This address is already in your '.
-									'address book.') );
+		if ($count) {
+			if (defined $oemail) {
+				if ($oemail ne $in->{email}) {
+					push(@err, 'This address is already in your address book.');
 				}
 			}
 			else {
-				push( @err, ht_li( {},	'This address is already in your '.
-								'address book.' ) );
+				push(@err, 'This address is already in your address book.');
 			}
 		}
 	}
 
-	if ( @err ) {
-		return( ht_div( { 'class' => 'error' }, ht_ul( {}, @err ) ) );
+	if (@err) {
+		return(ht_div({ 'class' => 'error' }, 
+						ht_h(1, 'Errors:'),
+						ht_ul(undef, map {ht_li(undef, $_)} @err)));
 	} 
 
 	return();
 } # END $k->_checkvals
 
 #-------------------------------------------------
-# $k->_form( $in )
+# $k->_form($in)
 #-------------------------------------------------
 sub _form {
 	my ( $k, $in ) = @_;
 
-	return( ht_form_js( $$k{uri} ),
-			ht_div( { 'class' => 'box' } ),
-			ht_table( {} ),
+	return(ht_form_js($$k{uri}),
+			ht_div({ 'class' => 'box' }),
+			ht_table(),
 
 			# First name
-			ht_tr(),
-				ht_td( { 'class' => 'shd' }, 'First Name' ),
-				ht_td( {}, ht_input( 'first', 'text', $in ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'First Name'),
+				ht_td(undef, ht_input('first', 'text', $in))),
 
 			# last name
-			ht_tr(),
-				ht_td( { 'class' => 'shd' }, 'Last Name' ),
-				ht_td( {}, ht_input( 'last', 'text', $in ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Last Name'),
+				ht_td(undef, ht_input('last', 'text', $in))),
 
 			# email
-			ht_tr(),
-				ht_td( { 'class' => 'shd' }, 'Email' ),
-				ht_td( {}, ht_input( 'email', 'text', $in ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Email'),
+				ht_td(undef, ht_input( 'email', 'text', $in))),
 
-			ht_tr(),
-			ht_td( 	{ 'colspan' => '2', 'class' => 'rshd' }, 
-					ht_submit( 'submit', 'Save' ),
-					ht_submit( 'cancel', 'Cancel' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
+					ht_submit('submit', 'Save'),
+					ht_submit('cancel', 'Cancel'))),
 
 			ht_utable(),
-
 			ht_udiv(),
-			ht_uform() );
+			ht_uform());
 } # END $k->_form
 
 #-------------------------------------------------
-# $k->do_add( $r, $field, $sort )
+# $k->do_add($r, $field, $sort)
 #-------------------------------------------------
 sub do_add {
-	my ( $k, $r, $field, $sort ) = @_;
+	my ($k, $r, $field, $sort) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title}	.= 'Add Entry';
-	my $relocate 		= $$k{rootp};
+
+	my $relocate = $$k{rootp};
 
 	if ( defined $field && defined $sort ) {
 		$relocate = "$$k{rootp}/list/$field/$sort";
 	}
  
-	return( $k->_relocate( $r, $relocate ) ) if ( $in->{cancel} );
+	return($k->_relocate($r, $relocate)) if ($in->{cancel});
 
-#	if ( my @err = $k->_checkvals( $in ) ) {
-#		return( ( $r->method eq 'POST' ? @err : '' ), $k->_form( $in ) );
-#	}
-
-	if ( ! ( my @errors = entry_checkvals( $k, $in ) ) ) {
-
-		db_run( $$k{dbh}, 'Add a new role.', 
-				sql_insert( 'wm_abook', 
-							'wm_user_id'	=> sql_num( $$k{user_id} ),
-							'first_name'	=> sql_str( $in->{first} ),
-							'last_name'		=> sql_str( $in->{last} ),
-							'email'			=> sql_str( $in->{email} ) ) );
-
-		db_commit( $$k{dbh} );
-		
-		return( $k->_relocate( $r, $relocate ) );
+	if (my @err = $k->_checkvals($in)) {
+		return(($r->method eq 'POST' ? @err : ''), $k->_form($in));
 	}
-	else {
-		if ( $r->method eq 'POST' || defined $in->{balk} ) {
-			return( @errors, entry_form( $k, $in ) );
-		}
-		else {
-			return( entry_form( $k, $in ) );
-		}
-	}
+
+	db_run($$k{dbh}, 'Add a new role.', 
+			sql_insert('wm_abook', 
+						'wm_user_id'	=> sql_num($$k{user_id}),
+						'first_name'	=> sql_str($in->{first}),
+						'last_name'		=> sql_str($in->{last}),
+						'email'			=> sql_str($in->{email})));
+
+	db_commit($$k{dbh});
+	
+	return($k->_relocate($r, $relocate));
 } # END $k->do_add
 
 #-------------------------------------------------
-# $k->do_delete( $r, $id, $yes )
+# $k->do_delete($r, $id, $yes)
 #-------------------------------------------------
 sub do_delete {
-	my ( $k, $r, $id, $yes ) = @_;
+	my ($k, $r, $id, $yes) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
-	$$k{page_title} 	.= 'Delete Entry';
+	my $in = $k->param(Apache2::Request->new($r));
+	$$k{page_title} .= 'Delete Entry';
 
-	return( 'Invalid id.' ) 						if ( ! is_integer( $id ) );
-	return( $k->_relocate( $r, $$k{rootp} ) ) if ( defined $in->{cancel} );
+	return('Invalid id.')					if (! is_integer($id));
+	return($k->_relocate($r, $$k{rootp}))	if (defined $in->{cancel});
 
-	if ( ( defined $yes ) && ( $yes eq 'yes' ) ) {
+	if ((defined $yes) && ($yes eq 'yes')) {
 
-		db_run( $$k{dbh}, 'remove the entry',
-				'DELETE FROM wm_abook WHERE id = ', sql_num( $id ), 
-				'AND wm_user_id = ', sql_num( $$k{user_id} ) );
+		db_run($$k{dbh}, 'remove the entry',
+				'DELETE FROM wm_abook WHERE id = ', sql_num($id), 
+				'AND wm_user_id = ', sql_num($$k{user_id}));
 
-		db_commit( $$k{dbh} );
+		db_commit($$k{dbh});
 
-		return( $k->_relocate( $r, $$k{rootp} ) );
+		return($k->_relocate($r, $$k{rootp}));
 	}
 	else {
 		# Look up the entry information.
-		my $sth = db_query( $$k{dbh}, 'get role information',
+		my $sth = db_query($$k{dbh}, 'get role information',
 							'SELECT first_name, last_name FROM wm_abook ',
-							'WHERE id = ', sql_num( $id ) );
+							'WHERE id = ', sql_num($id));
 
-		my ( $fname, $lname ) = db_next( $sth );
+		my ($fname, $lname) = db_next($sth);
 
-		db_finish( $sth );
+		db_finish($sth);
 
-		return( ht_form_js( "$$k{uri}/yes" ), 
-				ht_div( { class => 'box' } ),
-				ht_table( { } ),
-				ht_tr(),
-					ht_td( 	{ class => 'dta' }, 
+		return( ht_form_js("$$k{uri}/yes"), 
+				ht_div({ class => 'box' }),
+				ht_table(),
+				ht_tr(undef,
+					ht_td({ class => 'dta' }, 
 							qq!Delete the entry for "$fname $lname" ? !,
-							q!This will completely remove this entry.! ),
-				ht_utr(),
-				ht_tr(),
-					ht_td( { 'class' => 'rshd' }, 
-							ht_submit( 'submit', 'Continue with Delete' ),
-							ht_submit( 'cancel', 'Cancel' ) ),
-				ht_utr(),
+							q!This will completely remove this entry.!)),
+				ht_tr(undef,
+					ht_td({ 'class' => 'rshd' }, 
+						ht_submit('submit', 'Continue with Delete'),
+						ht_submit('cancel', 'Cancel'))),
 				ht_utable(),
 				ht_udiv(),
-				ht_uform() );
+				ht_uform());
 	}
 } # END $k->do_delete
 
 #-------------------------------------------------
-# $k->do_edit( $r, $id )
+# $k->do_edit($r, $id)
 #-------------------------------------------------
 sub do_edit {
-	my ( $k, $r, $id ) = @_;
+	my ($k, $r, $id) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title}	.= 'Edit Entry';
 	
-	return( $k->_relocate( $r, $$k{rootp} ) ) if ( $in->{cancel} );
+	return($k->_relocate($r, $$k{rootp})) if ($in->{cancel});
 
-	if ( ! ( my @errors = entry_checkvals( $k, $in, $id ) ) ) {
+	if (! (my @errors = $k->_checkvals($in, $id))) {
 
-		db_run( $$k{dbh}, 'Update a role.', 
-				sql_update( 'wm_abook', 'WHERE id = '. sql_num( $id ). 
+		db_run($$k{dbh}, 'Update a role.', 
+				sql_update('wm_abook', 'WHERE id = '. sql_num($id). 
 								'AND wm_user_id = '. sql_num($$k{user_id}),
 
-							'first_name'	=> sql_str( $in->{first} ),
-							'last_name'		=> sql_str( $in->{last} ),
-							'email'			=> sql_str( $in->{email} ) ) );
+							'first_name'	=> sql_str($in->{first}),
+							'last_name'		=> sql_str($in->{last}),
+							'email'			=> sql_str($in->{email})));
 
-		db_commit( $$k{dbh} );
+		db_commit($$k{dbh});
 		
-		return( $k->_relocate( $r, $$k{rootp} ) );
+		return($k->_relocate($r, $$k{rootp}));
 	}
 	else {
-		my $sth = db_query( $$k{dbh}, 'get old values',
+		my $sth = db_query($$k{dbh}, 'get old values',
 							'SELECT first_name, last_name, email ',
-							'FROM wm_abook WHERE id = ', sql_num( $id ), 
-							'AND wm_user_id = ', sql_num( $$k{user_id} ) );
+							'FROM wm_abook WHERE id = ', sql_num($id), 
+							'AND wm_user_id = ', sql_num($$k{user_id}));
 
-		while ( my ( $first, $last, $email ) = db_next( $sth ) ) {
-			$in->{first} 	= $first 	if ( ! defined $in->{first} );
-			$in->{last} 	= $last 	if ( ! defined $in->{last} );
-			$in->{email} 	= $email 	if ( ! defined $in->{email} );
+		while (my ($first, $last, $email) = db_next($sth)) {
+			$in->{first} 	= $first 	if (! defined $in->{first});
+			$in->{last} 	= $last 	if (! defined $in->{last});
+			$in->{email} 	= $email 	if (! defined $in->{email});
 		}
 
-		db_finish( $sth );
-
-		if ( $r->method eq 'POST' ) {
-			return( @errors, entry_form( $k, $in ) );
-		}
-		else {
-			return( entry_form( $k, $in ) );
-		}
+		db_finish($sth);
+		
+		return(($r->method eq 'POST' ? @errors : ''), $k->_form($in));
 	}
 } # END $k->do_edit
 
 #-------------------------------------------------
-# $k->do_main( $r, $sort )
+# $k->do_main($r, $sort)
 #-------------------------------------------------
 sub do_main {
 	my ( $k, $r, $sort ) = @_;
 
 	$$k{page_title} .= 'Address Book';
-	$sort 				= 'last' if ( ! is_text( $sort ) );
 
-	if ( $sort =~ /first/i ) {
+	$sort = 'last' if (! is_text($sort));
+
+	if ($sort =~ /first/i) {
 		$sort = 'first_name';
 	}
 	else {
-		$sort = ( $sort =~ /last/i ) ? 'last_name' : 'email';
+		$sort = ($sort =~ /last/i) ? 'last_name' : 'email';
 	}
 
-	my @lines = ( 	ht_div( { 'class' => 'box' } ),
-					ht_table( {} ),
+	my @lines = ( 	ht_div({ 'class' => 'box' }),
+					ht_table(),
 
-					ht_tr(),
-					ht_td( 	{ 'class' => 'hdr' }, 
-							ht_a("$$k{rootp}/main/first", 'First Name') ),
-					ht_td( 	{ 'class' => 'hdr' }, 
-							ht_a( "$$k{rootp}/main/last", 'Last Name' ) ),
-					ht_td( 	{ 'class' => 'hdr' }, 
-							ht_a( "$$k{rootp}/main/mail", 'Email' ) ),
-					ht_td( { 'class' => 'rhdr' },
+					ht_tr(undef,
+						ht_td({ 'class' => 'hdr' }, 
+							ht_a("$$k{rootp}/main/first", 'First Name')),
+						ht_td({ 'class' => 'hdr' }, 
+							ht_a( "$$k{rootp}/main/last", 'Last Name')),
+						ht_td({ 'class' => 'hdr' }, 
+							ht_a( "$$k{rootp}/main/mail", 'Email')),
+						ht_td({ 'class' => 'rhdr' },
 							'[',
-							ht_a( $$k{group_root}, 'Groups' ), '|',
-							ht_a( "$$k{rootp}/add", 'Add' ), ']' ),
-					ht_utr() );
+							ht_a($$k{group_root}, 'Groups'), '|',
+							ht_a("$$k{rootp}/add", 'Add'), ']' )) );
 
-	my $sth = db_query( $$k{dbh}, 'list address book entries',
+	my $sth = db_query($$k{dbh}, 'list address book entries',
 						'SELECT id, first_name, last_name, email',
 						'FROM wm_abook WHERE wm_user_id = ',
-						sql_num( $$k{user_id} ), 'ORDER BY ', $sort );
+						sql_num($$k{user_id}), 'ORDER BY ', $sort);
 
-	while ( my ( $id, $first, $last, $email ) = db_next( $sth ) ) {
+	while (my ($id, $first, $last, $email) = db_next($sth)) {
 
 		my $compose = "$$k{mail_root}/compose/$$k{imap_inbox}?to=$email";
 
-		push( @lines,	ht_tr(),
-						ht_td( { 'class' => 'dta' }, $first ),
-						ht_td( { 'class' => 'dta' }, $last ),
-						ht_td( { 'class' => 'dta' }, 
-								ht_a( $compose, $email ), ),
-						ht_td( 	{ 'class' => 'rdta' } ),
-							'[', ht_a( "$$k{rootp}/edit/$id", 'Edit' ), '|',
-							ht_a( "$$k{rootp}/delete/$id", 'Delete' ), ']',
-						ht_utd(),
-						ht_utr() );
+		push(@lines,	ht_tr(undef,
+							ht_td({ 'class' => 'dta' }, $first),
+							ht_td({ 'class' => 'dta' }, $last),
+							ht_td({ 'class' => 'dta' }, ht_a($compose, $email)),
+							ht_td({ 'class' => 'rdta' },
+								'[', ht_a("$$k{rootp}/edit/$id", 'Edit'), '|',
+								ht_a("$$k{rootp}/delete/$id", 'Delete'), ']',
+							)));
 	}
 
-	if ( db_rowcount( $sth ) < 1 ) {
-		push( @lines, 	ht_tr(),
-						ht_td( 	{ 'colspan' => 4, 'class' => 'cdta' }, 
-								'No entries found.' ),
-						ht_utr() );
+	if (db_rowcount($sth) < 1) {
+		push(@lines, ht_tr(undef,
+						ht_td({ 'colspan' => 4, 'class' => 'cdta' }, 
+								'No entries found.')));
 	}
 
-	db_finish( $sth );
+	db_finish($sth);
 
-	return( @lines, ht_utable(), ht_udiv() );
+	return(@lines, ht_utable(), ht_udiv());
 } # END $k->do_main
 
 #-------------------------------------------------
-# $k->do_list( $r, $field, $sort )
+# $k->do_list($r, $field, $sort)
 #-------------------------------------------------
 sub do_list {
-	my ( $k, $r, $field, $sort ) = @_;
+	my ($k, $r, $field, $sort) = @_;
 	
 	$$k{page_title} .= 'Address Book';
 
-	return( 'Invalid field' ) if ( ! is_text( $field ) );
+	return('Invalid field') if (! is_text($field));
 
-	$sort = 'last' if ( ! is_text( $sort ) );
+	$sort = 'last' if (! is_text($sort));
 
-	if ( $sort =~ /first/i ) {
+	if ($sort =~ /first/i) {
 		$sort = 'first_name';
 	}
 	else {
-		$sort = ( $sort =~ /last/i ) ? 'last_name' : 'email';
+		$sort = ($sort =~ /last/i) ? 'last_name' : 'email';
 	}
 
-	my @lines = ( 	ht_div( { 'class' => 'box' } ),
+	my @lines = ( 	ht_div({ 'class' => 'box' }),
 
 					'<script type="text/javascript">',
 					'<!--',
@@ -355,53 +330,49 @@ sub do_list {
 					'//--> ',
 					'</script>',
 
-					ht_table( {} ),
-					ht_tr(),
-					ht_td( 	{ 'class' => 'hdr' }, 'Address Book' ),
-					ht_td( 	{ 'class' => 'rhdr' },
-							'[', ht_a( 	"$$k{rootp}/add/$field/$sort", 
-										'Add' ), ']' ),
-					ht_utr(),
-					ht_tr(),
-					ht_td( { 'class' => 'rshd', 'colspan' => '2' } ),
-						'[',
-						ht_a( "$$k{rootp}/list/$field/first", 'First Name'),
-						'|',
-						ht_a( "$$k{rootp}/list/$field/last", 'Last Name' ),
-						'|',
-						ht_a( "$$k{rootp}/list/$field/mail", 'Email' ), ']',
-					ht_utd(),
-					ht_utr() );
+					ht_table(),
+					ht_tr(undef,
+						ht_td({ 'class' => 'hdr' }, 'Address Book'),
+						ht_td({ 'class' => 'rhdr' },
+							'[', ht_a("$$k{rootp}/add/$field/$sort", 'Add'),
+							']')),
+					ht_tr(undef,
+						ht_td({ 'class' => 'rshd', 'colspan' => '2' },
+							'[',
+							ht_a("$$k{rootp}/list/$field/first", 'First Name'),
+							'|',
+							ht_a("$$k{rootp}/list/$field/last", 'Last Name'),
+							'|',
+							ht_a("$$k{rootp}/list/$field/mail", 'Email'), ']',
+						)));
 
 	my %addys;
-	my $sth = db_query( $$k{dbh}, 'list address book entries',
+	my $sth = db_query($$k{dbh}, 'list address book entries',
 						'SELECT id, first_name, last_name, email',
 						'FROM wm_abook WHERE wm_user_id = ',
-						sql_num( $$k{user_id} ), 'ORDER BY ', $sort );
+						sql_num($$k{user_id}), 'ORDER BY ', $sort);
 
-	while ( my ( $id, $first, $last, $email ) = db_next( $sth ) ) {
+	while (my ($id, $first, $last, $email) = db_next($sth)) {
 
 		$addys{$id} = $email;
 
-		push( @lines,	ht_tr(),
-						ht_td( 	{ 'class' => 'dta', 'colspan' => '2' }, 
-								ht_a( 	"javascript:SendAddr('$email')", 
-										"$first $last &lt;$email&gt;" ) ),
-						ht_utr() );
+		push(@lines,	ht_tr(undef,
+							ht_td({ 'class' => 'dta', 'colspan' => '2' }, 
+								ht_a("javascript:SendAddr('$email')", 
+										"$first $last &lt;$email&gt;"))) );
 	}
 
-	if ( db_rowcount( $sth ) < 1 ) {
-		push( @lines, 	ht_tr(),
-						ht_td( 	{ 'class' => 'cdta', 'colspan' => '2' }, 
-								'No addresses found.' ),
-						ht_utr() );
+	if (db_rowcount($sth) < 1) {
+		push(@lines, 	ht_tr(undef,
+						ht_td({ 'class' => 'cdta', 'colspan' => '2' }, 
+								'No addresses found.')));
 	}
 
-	db_finish( $sth );
+	db_finish($sth);
 
-	push( @lines,	ht_utable(), ht_udiv(),
+	push(@lines,	ht_utable(), ht_udiv(),
 	
-					ht_div( { 'class' => 'box' } ),
+					ht_div({ 'class' => 'box' }),
 
 					'<script type="text/javascript">',
 					'<!--',
@@ -411,46 +382,41 @@ sub do_list {
 					'//--> ',
 					'</script>',
 
-					ht_table( {} ),
-					ht_tr(),
-					ht_td( 	{ 'class' => 'hdr' }, 'Groups' ),
-					ht_utr() );
+					ht_table(),
+					ht_tr(undef, ht_td({ 'class' => 'hdr' }, 'Groups')) );
 	
-	my $bth = db_query( $$k{dbh}, 'get groups', 
+	my $bth = db_query($$k{dbh}, 'get groups', 
 						'SELECT id, name FROM wm_mlist WHERE wm_user_id = ',
-						sql_num( $$k{user_id} ), 'ORDER BY name' );
+						sql_num($$k{user_id}), 'ORDER BY name');
 	
-	while ( my ( $mid, $name ) = db_next( $bth ) ) {
+	while (my ($mid, $name) = db_next($bth)) {
 
 		my @mails;
 		# Get the users.
-		my $cth = db_query( $$k{dbh}, 'get users',
+		my $cth = db_query($$k{dbh}, 'get users',
 							'SELECT wm_abook_id FROM wm_mlist_members ',
-							'WHERE wm_user_id = ', sql_num( $$k{user_id} ),
-							'AND wm_mlist_id = ', sql_num( $mid ) );
+							'WHERE wm_user_id = ', sql_num($$k{user_id}),
+							'AND wm_mlist_id = ', sql_num($mid) );
 
-		while ( my ( $eid ) = db_next( $cth ) ) {
-			push( @mails, $addys{$eid} );
+		while (my ($eid) = db_next($cth)) {
+			push(@mails, $addys{$eid});
 		}
 		
-		db_finish( $cth );
+		db_finish($cth);
 
-		my $email = join( ', ', @mails );
+		my $email = join(', ', @mails);
 
-		push( @lines,	ht_tr(),
-						ht_td( 	{ 'class' => 'dta' }, 
-								ht_a( 	"javascript:SendAddr('$email')", 
-										$name ) ),
-						ht_utr() );
+		push(@lines,	ht_tr(undef,
+							ht_td({ 'class' => 'dta' }, 
+								ht_a("javascript:SendAddr('$email')", $name))));
 	}
 
-	if ( db_rowcount( $bth ) < 1 ) {
-		push( @lines, 	ht_tr(),
-						ht_td( 	{ 'class' => 'cdta' }, 'No groups found.' ),
-						ht_utr() );
+	if (db_rowcount($bth) < 1) {
+		push(@lines, 	ht_tr(undef,
+							ht_td({ 'class' => 'cdta' }, 'No groups found.')));
 	}
 
-	return( @lines, ht_utable(), ht_udiv() );
+	return(@lines, ht_utable(), ht_udiv());
 } # END $k->do_list
 
 # EOF

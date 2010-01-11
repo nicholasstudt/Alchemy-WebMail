@@ -26,11 +26,11 @@ sub _checkvals {
 	my @errors;
 
 	if (! is_text( $in->{username} ) ) {
-		push(@errors, ht_li(undef, 'Please enter your user name.'));
+		push(@errors, 'Please enter your user name.');
 	}
 
 	if (! is_text( $in->{password} ) ) {
-		push(@errors, ht_li(undef, 'Please enter your password.'));
+		push(@errors, 'Please enter your password.');
 	}
 
 	if (! @errors) {
@@ -40,8 +40,8 @@ sub _checkvals {
 							lc( $in->{username} ), $in->{password},
 							$$k{file_tmp} );
 
-		if ( ! $imap->alive() ) {
-			push(@errors, ht_li(undef, 'Invalid username or password.'));
+		if (! $imap->alive()) {
+			push(@errors, 'Invalid username or password.');
 		}
 		else {
 			$imap->close();
@@ -50,7 +50,8 @@ sub _checkvals {
 
 	if (@errors) {
 		return(ht_div({ 'class' => 'error' }, 
-						ht_h(1, 'Errors:'), ht_ul(undef, @errors)));
+						ht_h(1, 'Errors:'), 
+						ht_ul(undef, map {ht_li(undef, $_)} @errors)));
 	}
 
 	return();
