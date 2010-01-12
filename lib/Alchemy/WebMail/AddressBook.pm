@@ -183,9 +183,8 @@ sub do_delete {
 				ht_div({ class => 'box' }),
 				ht_table(),
 				ht_tr(undef,
-					ht_td({ class => 'dta' }, 
-							qq!Delete the entry for "$fname $lname" ? !,
-							q!This will completely remove this entry.!)),
+					ht_td(undef, qq!Delete the entry for "$fname $lname" ? !,
+								 q!This will completely remove this entry.!)),
 				ht_tr(undef,
 					ht_td({ 'class' => 'rshd' }, 
 						ht_submit('submit', 'Continue with Delete'),
@@ -280,11 +279,11 @@ sub do_main {
 
 		my $compose = "$$k{mail_root}/compose/$$k{imap_inbox}?to=$email";
 
-		push(@lines,	ht_tr(undef,
-							ht_td({ 'class' => 'dta' }, $first),
-							ht_td({ 'class' => 'dta' }, $last),
-							ht_td({ 'class' => 'dta' }, ht_a($compose, $email)),
-							ht_td({ 'class' => 'rdta' },
+		push(@lines, ht_tr(undef,
+						ht_td(undef, $first),
+						ht_td(undef, $last),
+						ht_td(undef, ht_a($compose, $email)),
+						ht_td({ 'class' => 'rdta' },
 								'[', ht_a("$$k{rootp}/edit/$id", 'Edit'), '|',
 								ht_a("$$k{rootp}/delete/$id", 'Delete'), ']',
 							)));
@@ -357,7 +356,7 @@ sub do_list {
 		$addys{$id} = $email;
 
 		push(@lines,	ht_tr(undef,
-							ht_td({ 'class' => 'dta', 'colspan' => '2' }, 
+							ht_td({'colspan' => '2' }, 
 								ht_a("javascript:SendAddr('$email')", 
 										"$first $last &lt;$email&gt;"))) );
 	}
@@ -407,7 +406,7 @@ sub do_list {
 		my $email = join(', ', @mails);
 
 		push(@lines,	ht_tr(undef,
-							ht_td({ 'class' => 'dta' }, 
+							ht_td(undef,
 								ht_a("javascript:SendAddr('$email')", $name))));
 	}
 

@@ -3,23 +3,23 @@ package Alchemy::WebMail::Preferences::Roles;
 use strict;
 
 use KrKit::DB;
-use KrKit::HTML qw( :all );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
 use Alchemy::WebMail;
 
-our @ISA = ( 'Alchemy::WebMail' );
+our @ISA = ('Alchemy::WebMail');
 
 ############################################################
 # Functions                                                #
 ############################################################
 
 #-------------------------------------------------
-# $k->_checkvals( $in )
+# $k->_checkvals($in)
 #-------------------------------------------------
 sub _checkvals {
-	my ( $k, $in ) = @_;
+	my ($k, $in) = @_;
  
 	my @errors;
 
@@ -64,38 +64,34 @@ sub _form {
 			# main role
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Default Role'),
-				ht_td({ 'class' => 'dta' },
-					ht_select('main_role', 1, $in, '', '', 
-								'0', 'No', '1', 'Yes'))),
+				ht_td(undef, ht_select('main_role', 1, $in, '', '', 
+										'0', 'No', '1', 'Yes'))),
 
 			# role name
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Role Name'),
-				ht_td({ 'class' => 'dta' }, 
-					ht_input('role_name', 'text', $in))),
+				ht_td(undef, ht_input('role_name', 'text', $in))),
 
 			# name
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Name'),
-				ht_td({ 'class' => 'dta' }, ht_input('name', 'text', $in))),
+				ht_td(undef, ht_input('name', 'text', $in))),
 
 			# reply to 
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Reply To'),
-				ht_td({ 'class' => 'dta' }, ht_input('reply_to', 'text', $in))),
+				ht_td(undef, ht_input('reply_to', 'text', $in))),
 
 			# save sent 
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Save Sentmail'),
-				ht_td({ 'class' => 'dta' }, 
-					ht_select('savesent', 1, $in, '', '', @folders))),
+				ht_td(undef, ht_select('savesent', 1, $in, '', '', @folders))),
 
 			# signature
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Signature'),
-				ht_td({ 'class' => 'dta' }, 
-					ht_input('signature', 'textarea', $in,
-								'cols="50" rows="4"'))),
+				ht_td(undef, ht_input('signature', 'textarea', $in,
+										'cols="50" rows="4"'))),
 
 			ht_tr(undef,
 				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
@@ -194,7 +190,7 @@ sub do_delete {
 				ht_div({ 'class' => 'box' },
 					ht_table(),
 					ht_tr(undef,
-						ht_td({ 'class' => 'dta' }, 
+						ht_td(undef,
 								qq!Delete the role "$name" ? This will !,
 								q!completely remove this role.! )),
 					ht_tr(undef,
@@ -302,17 +298,14 @@ sub do_main {
 						'ORDER BY main_role DESC, role_name' );
 
 	while ( my($id, $main, $rname, $name, $reply) = db_next($sth) ) {
-
-		push(@lines,	ht_tr(undef,
-							ht_td({ 'class' => 'dta' }, ($main ? '*' : '')),
-							ht_td({ 'class' => 'dta' }, $rname),
-							ht_td({ 'class' => 'dta' }, $name),
-							ht_td({ 'class' => 'dta' }, $reply),
-							ht_td({ 'class' => 'rdta' },
-								'[',
-								ht_a("$$k{rootp}/edit/$id", 'Edit'), '|',
-								ht_a("$$k{rootp}/delete/$id", 'Delete'), ']',
-							)),);		
+		push(@lines, ht_tr(undef,
+						ht_td(undef, ($main ? '*' : '')),
+						ht_td(undef, $rname),
+						ht_td(undef, $name),
+						ht_td(undef, $reply),
+						ht_td({ 'class' => 'rdta' },
+							'[', ht_a("$$k{rootp}/edit/$id", 'Edit'), '|',
+							ht_a("$$k{rootp}/delete/$id", 'Delete'), ']')));
 	}
 
 	db_finish( $sth );

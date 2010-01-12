@@ -3,236 +3,211 @@ package Alchemy::WebMail::Preferences;
 use strict;
 
 use KrKit::DB;
-use KrKit::HTML qw( :all );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
 use Alchemy::WebMail;
 
-our @ISA = ( 'Alchemy::WebMail' );
+our @ISA = ('Alchemy::WebMail');
 
 ############################################################
 # Functions                                                #
 ############################################################
 
 #-------------------------------------------------
-# $k->_checkvals( $in )
+# $k->_checkvals($in)
 #-------------------------------------------------
 sub _checkvals {
-	my ( $k, $in ) = @_;
+	my ($k, $in) = @_;
 
 	my @errors;
 
-	if ( ! is_number( $in->{reply} ) ) {
-		push( @errors, ht_li( {}, 'Select reply inclusion.' ) );
+	if (! is_number($in->{reply})) {
+		push(@errors, 'Select reply inclusion.');
 	}
 
-	if ( ! is_number( $in->{delete} ) ) {
-		push( @errors, ht_li( {}, 'Select delete action.' ) );
+	if (! is_number($in->{delete})) {
+		push(@errors, 'Select delete action.');
 	}
 
-	if ( ! is_text( $in->{length} ) ) {
-		push( @errors, ht_li( {}, 'Select session length.' ) );
+	if (! is_text($in->{length})) {
+		push(@errors, 'Select session length.');
 	}
 
-	if ( ! is_number( $in->{count} ) ) {
-		push( @errors, ht_li( {}, 'Select folder message count.' ) );
+	if (! is_number($in->{count})) {
+		push(@errors, 'Select folder message count.');
 	}
 
-	if ( ! is_text( $in->{field} ) ) {
-		push( @errors, ht_li( {}, 'Select sort field.' ) );
+	if (! is_text($in->{field})) {
+		push(@errors, 'Select sort field.');
 	}
 
-	if ( ! is_number( $in->{order} ) ) {
-		push( @errors, ht_li( {}, 'Select sort order.' ) );
+	if (! is_number($in->{order})) {
+		push(@errors, 'Select sort order.');
 	}
 
-	if ( @errors ) {
-		return( ht_div( { 'class' => 'error' }, ht_ul( {}, @errors ) ) );
+	if (@errors) {
+		return(ht_div({ 'class' => 'error' },
+					ht_h(1, 'Errors:'),
+					ht_ul(undef, map {ht_li(undef, $_)} @errors )));
 	}
 
 	return();
 } # END $k->_checkvals
 
 #-------------------------------------------------
-# $k->_form( $in )
+# $k->_form($in)
 #-------------------------------------------------
 sub _form {
-	my ( $k, $in ) = @_;
+	my ($k, $in) = @_;
 
 	my @opts;
 
-	for my $sopt ( split( ',', $$k{'p_sessopt'} ) ) {
-		push( @opts, $sopt, ucfirst( $sopt ) );
+	for my $sopt (split(',', $$k{'p_sessopt'})) {
+		push(@opts, $sopt, ucfirst($sopt));
 	}
 
-	return( ht_form_js( $$k{uri} ),	
-			ht_div( { 'class' => 'box' } ),
-			ht_table( {} ),
+	return(ht_form_js($$k{uri}),	
+			ht_div({ 'class' => 'box' }),
+			ht_table(),
 
-			# Select
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Reply Included' ),
-			ht_td( { 'class' => 'dta' },
-					ht_select( 	'reply', 1, $in, '', '', 
-								'1', 'Yes', '0', 'No' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Reply Included'),
+				ht_td(undef,
+					ht_select('reply', 1, $in, '', '', '1', 'Yes', '0', 'No'))),
 
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Delete Action' ),
-			ht_td( { 'class' => 'dta' },
-					ht_select( 	'delete', 1, $in, '', '', 
-								'1', 'Delete', '0', 'Move to Trash' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Delete Action'),
+				ht_td(undef, ht_select('delete', 1, $in, '', '', 
+										'1', 'Delete', '0', 'Move to Trash'))),
 			
-			# Select
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Session Length' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					ht_select( 'length', 1, $in, '', '', @opts ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Session Length'),
+				ht_td(undef, ht_select('length', 1, $in, '', '', @opts))),
 
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Folder Message Count' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					ht_select( 	'count', '1', $in, '', '',
-								'10', '10', '25', '25', '50', '50',
-								'1000', 'All' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Message Count'),
+				ht_td(undef, ht_select('count', '1', $in, '', '',
+										'10', '10', '25', '25', '50', '50',
+										'1000', 'All'))),
 
-			# Select
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Folder Sort Field' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					ht_select( 'field', '1', $in, '', '', 
-								'date', 'Date', 		'from', 'From',
-								'subject', 'Subject', 	'size', 'Size' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Sort Field'),
+				ht_td(undef, ht_select('field', '1', $in, '', '', 
+										'date', 'Date', 'from', 'From',
+										'subject', 'Subject', 'size', 'Size'))),
+			
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Sort Order'),
+				ht_td(undef, ht_select('order', '1', $in, '', '', 
+										'0', 'Ascending', '1', 'Descending'))),
 
-			# Select
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Folder Sort Order' ),
-			ht_td( { 'class' => 'dta' }, ht_select( 'order', '1', $in, '', '', 
-									'0', 'Ascending', '1', 'Descending' ) ),
-			ht_utr(),
-
-			ht_tr(),
-			ht_td( 	{ 'colspan' => '2', 'class' => 'rshd' }, 
-					ht_submit( 'submit', 'Save' ),
-					ht_submit( 'cancel', 'Cancel' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
+					ht_submit('submit', 'Save'),
+					ht_submit('cancel', 'Cancel'))),
 
 			ht_utable(),
-
 			ht_udiv(),
-			ht_uform() );
+			ht_uform());
 } # END $k->_form
 
 #-------------------------------------------------
-# $k->do_edit( $r )
+# $k->do_edit($r)
 #-------------------------------------------------
 sub do_edit {
-	my ( $k, $r ) = @_;
+	my ($k, $r) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title}	.= 'Update Preferences';
 	
-	return( $k->_relocate( $r, $$k{rootp} ) ) if ( $in->{cancel} );
+	return($k->_relocate($r, $$k{rootp})) if ($in->{cancel});
 
-	if ( my @err = $k->_checkvals( $in ) ) {
+	if (my @err = $k->_checkvals($in)) {
 
 		# Look up the users id and the old values. 
-		my $sth = db_query( $$k{dbh}, 'get prefs', 
+		my $sth = db_query($$k{dbh}, 'get prefs', 
 							'SELECT reply_include, true_delete, ',
 							'session_length, fldr_showcount, fldr_sortorder,',
 							'fldr_sortfield FROM wm_users WHERE id = ', 
-							sql_num( $$k{user_id} ) );
+							sql_num($$k{user_id}));
 	
 		my ($reply, $delete, $length, $count, $order, $field) = db_next($sth);
 
-		db_finish( $sth );
+		db_finish($sth);
 
 		# Set the old values if they are not already defined. 
 		# Setting here rather than above lets users blank entries.
-		$in->{reply} 	= $reply 	if ( ! defined $in->{reply} );
-		$in->{delete} 	= $delete 	if ( ! defined $in->{delete} );
-		$in->{count} 	= $count 	if ( ! defined $in->{count} );
-		$in->{order} 	= $order 	if ( ! defined $in->{order} );
-		$in->{field} 	= $field 	if ( ! defined $in->{field} );
+		$in->{reply} 	= $reply 	if (! defined $in->{reply});
+		$in->{delete} 	= $delete 	if (! defined $in->{delete});
+		$in->{count} 	= $count 	if (! defined $in->{count});
+		$in->{order} 	= $order 	if (! defined $in->{order});
+		$in->{field} 	= $field 	if (! defined $in->{field});
 		
-		$in->{length} = $k->s2hm( $length ) if ( ! defined $in->{length} );
+		$in->{length} = $k->s2hm($length) if (! defined $in->{length});
 
-		return( ( $r->method eq 'POST' ? @err : '' ), $k->_form( $in ) );
+		return(($r->method eq 'POST' ? @err : ''), $k->_form($in));
 	}
 
-	my $session = $k->hm2s( $in->{length} );
+	my $session = $k->hm2s($in->{length});
 
-	db_run( $$k{dbh}, 'Update user prefrences', 
-			sql_update( 'wm_users', 'WHERE id ='. sql_num($$k{user_id}),
-						'reply_include' 	=> sql_bool( $in->{reply} ),
-						'true_delete' 		=> sql_bool( $in->{delete} ),
-						'session_length'	=> sql_num( $session ),
-						'fldr_showcount'	=> sql_num( $in->{count} ),
-						'fldr_sortorder'	=> sql_num( $in->{order} ),
-						'fldr_sortfield'	=> sql_str( $in->{field} ) ) );
+	db_run($$k{dbh}, 'Update user prefrences', 
+			sql_update('wm_users', 'WHERE id ='. sql_num($$k{user_id}),
+						'reply_include' 	=> sql_bool($in->{reply}),
+						'true_delete' 		=> sql_bool($in->{delete}),
+						'session_length'	=> sql_num($session),
+						'fldr_showcount'	=> sql_num($in->{count}),
+						'fldr_sortorder'	=> sql_num($in->{order}),
+						'fldr_sortfield'	=> sql_str($in->{field})));
 
-	db_commit( $$k{dbh} );
+	db_commit($$k{dbh});
 		
-	return( $k->_relocate( $r, $$k{rootp} ) );
+	return($k->_relocate($r, $$k{rootp}));
 } # END $k->do_edit
 
 #-------------------------------------------------
-# $k->do_main( $r )
+# $k->do_main($r)
 #-------------------------------------------------
 sub do_main {
-	my ( $k, $r ) = @_;
+	my ($k, $r) = @_;
 
 	$$k{page_title} .= 'Preferences';
 
-	return(	ht_div( { 'class' => 'box' } ),
+	return(ht_div({ 'class' => 'box' }),
 
-			ht_table( {} ),
-			ht_tr(),
-			ht_td( 	{ 'class' => 'hdr' }, "Preferences for $$k{user}" ),
-			ht_td( 	{ 'class' => 'rhdr' },
-					'[',ht_a( "$$k{rootp}/edit", 'Update' ), ']' ),
-			ht_utr(),
+			ht_table(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'hdr' }, "Preferences for $$k{user}"),
+				ht_td({ 'class' => 'rhdr' },
+					'[', ht_a("$$k{rootp}/edit", 'Update'), ']')),
 		
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Reply Included' ),
-			ht_td( { 'class' => 'dta' }, ( $$k{p_reply} ? 'Yes' : 'No' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Reply Included'),
+				ht_td(undef, ($$k{p_reply} ? 'Yes' : 'No'))),
 
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Delete Action' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					( $$k{p_delete} ? 'Delete' : 'Move to trash' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Delete Action'),
+				ht_td(undef, ($$k{p_delete} ? 'Delete' : 'Move to trash'))),
 
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Session Length' ),
-			ht_td( { 'class' => 'dta' }, $k->s2hm( $$k{p_sess_s} ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Session Length'),
+				ht_td(undef, $k->s2hm($$k{p_sess_s}))),
 
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Folder Message Count' ),
-			ht_td( { 'class' => 'dta' }, $$k{p_fcount} ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Message Count'),
+				ht_td(undef, $$k{p_fcount})),
 
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Folder Sort Field' ),
-			ht_td( { 'class' => 'dta' }, ucfirst( $$k{p_sfield} ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Sort Field'),
+				ht_td(undef, ucfirst($$k{p_sfield}))),
 
-			ht_tr(),
-			ht_td( 	{ 'class' => 'shd' }, 'Folder Sort Order' ),
-			ht_td( 	{ 'class' => 'dta' }, 
-					( $$k{p_sorder} ? 'Descending' : 'Ascending' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder Sort Order'),
+				ht_td(undef, ($$k{p_sorder} ? 'Descending' : 'Ascending'))),
 
 			ht_utable(),
-			ht_udiv() );
-
+			ht_udiv());
 } # END $k->do_main
 
 # EOF

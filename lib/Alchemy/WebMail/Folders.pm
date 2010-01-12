@@ -3,271 +3,265 @@ package Alchemy::WebMail::Folders;
 use strict;
 
 use KrKit::DB;
-use KrKit::HTML qw( :all );
+use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
 use Alchemy::WebMail;
 
-our @ISA = ( 'Alchemy::WebMail' );
+our @ISA = ('Alchemy::WebMail');
 
 ############################################################
 # Functions                                                #
 ############################################################
 
 #-------------------------------------------------
-# $k->_checkvals( $in, $edit )
+# $k->_checkvals($in, $edit)
 #-------------------------------------------------
 sub _checkvals {
-	my ( $k, $in, $edit ) = @_;
+	my ($k, $in, $edit) = @_;
 
 	my @err;
 
-	if ( ! is_text( $in->{folder} ) ) {
-		push( @err, ht_li( {}, 'Enter folder name.' ) );
+	if (! is_text($in->{folder})) {
+		push(@err, 'Enter folder name.');
 	}
 	else {
-		if ( $in->{folder} =~ /\// ) {
-			push( @err, ht_li( {}, '"/" is not a valid character.' ) );
+		if ($in->{folder} =~ /^\s|\s$/) {
+			push(@err, 'Folder may not begin or end with a space.');
+		}
+		
+		if ($in->{folder} =~ /\//) {
+			push(@err, '"/" is not a valid character.');
 		}
 
-		if ( ! $k->valid_mbox( $in->{folder} ) ) {
-			push( @err,	ht_li( {}, '"*", "%", "#", and "&" are not a valid characters' ) );
+		if (! $k->valid_mbox($in->{folder})) {
+			push(@err, '"*", "%", "#", and "&" are not a valid characters.');
 		}
 
-		if ( defined $edit && $edit ) {
-			if ( $in->{folder_old} eq $in->{folder} ) {
-				push( @err, ht_li( {}, 'Folder name is the same.' ) );
+		if (defined $edit && $edit) {
+			if ($in->{folder_old} eq $in->{folder}) {
+				push(@err, 'Folder name is the same.');
 			}
 		}
 
 		# Make sure the folder does not already exist.
 		if ($$k{imap}->folder_exists($in->{folder})) {
-			push( @err, ht_li( {}, 'This folder already exists.' ) );
+			push(@err, 'This folder already exists.');
 		}
 	}
 
-	if ( @err ) {
-		return( ht_div( { 'class' => 'error' }, ht_ul( {}, @err ) ) );
+	if (@err) {
+		return(ht_div({ 'class' => 'error' }, 
+					ht_h(1, 'Errors:'),
+					ht_ul(undef, map {ht_li(undef, $_)} @err)));
 	} 
 
 	return();
 } # END $k->_checkvals
 
 #-------------------------------------------------
-# $k->_form( $in, $edit )
+# $k->_form($in, $edit)
 #-------------------------------------------------
 sub _form {
-	my ( $k, $in, $edit ) = @_;
+	my ($k, $in, $edit) = @_;
 
-	my $name = ( defined $edit && $edit ) ? 'Rename' : 'Create' ;
+	my $name = (defined $edit && $edit) ? 'Rename' : 'Create' ;
 
-	return( ht_form_js( $$k{uri} ),	
-			ht_div( { 'class' => 'box' } ),
-			ht_table( {} ),
+	return( ht_form_js($$k{uri}),	
+			ht_div({ 'class' => 'box' }),
+			ht_table(),
 
-			ht_tr(),
-			ht_td( { 'class' => 'shd' }, 'Folder' ),
-			ht_td( {}, ht_input( 'folder', 'text', $in ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'class' => 'shd' }, 'Folder'),
+				ht_td(undef, ht_input('folder', 'text', $in))),
 
-			ht_tr(),
-			ht_td( 	{ 'colspan' => '2', 'class' => 'rshd' }, 
-					ht_submit( 'submit', $name. ' Folder' ),
-					ht_submit( 'cancel', 'Cancel' ) ),
-			ht_utr(),
+			ht_tr(undef,
+				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 
+					ht_submit('submit', $name. ' Folder'),
+					ht_submit('cancel', 'Cancel'))),
 
 			ht_utable(),
-
 			ht_udiv(),
-			ht_uform() );
+			ht_uform());
 } # END $k->_form
 
 #-------------------------------------------------
-# $k->do_add( $r )
+# $k->do_add($r)
 #-------------------------------------------------
 sub do_add {
-	my ( $k, $r ) = @_;
+	my ($k, $r) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title}	.= 'Create Folder';
 	
-	return( $k->_relocate( $r, $$k{rootp} ) ) if ( $in->{cancel} );
+	return($k->_relocate($r, $$k{rootp})) if ($in->{cancel});
 
-	if ( my @err = $k->_checkvals( $in ) ) {
-		return( ( $r->method eq 'POST' ? @err : '' ), $k->_form( $in ) );
+	if (my @err = $k->_checkvals($in)) {
+		return(($r->method eq 'POST' ? @err : ''), $k->_form($in));
 	}
 
 	# Create the folder.
-	if ( ! $$k{imap}->folder_create( $in->{folder} ) ) {
-		return( 'Error: ', $$k{imap}->error() );
+	if (! $$k{imap}->folder_create($in->{folder})) {
+		return('Error: ', $$k{imap}->error());
 	}
 	
-	return( $k->_relocate( $r, $$k{rootp} ) );
+	return($k->_relocate($r, $$k{rootp}));
 } # END $k->do_add
 
 #-------------------------------------------------
-# $k->do_delete( $r, $folder, $yes )
+# $k->do_delete($r, $folder, $yes)
 #-------------------------------------------------
 sub do_delete {
-	my ( $k, $r, $folder, $yes ) = @_;
+	my ($k, $r, $folder, $yes) = @_;
 
-	my $in 				= $k->param( Apache2::Request->new( $r ) );
-	$$k{page_title} 	.= 'Delete Folder';
+	my $in = $k->param(Apache2::Request->new($r));
+	$$k{page_title} .= 'Delete Folder';
 
-	return( 'No Folder.' ) 						if ( ! is_text( $folder ) );
-	return( $k->_relocate( $r, $$k{rootp} ) ) 	if ( defined $in->{cancel} );
+	return('No Folder.') 					if (! is_text($folder));
+	return($k->_relocate($r, $$k{rootp})) 	if (defined $in->{cancel});
 
-	if ( ( defined $yes ) && ( $yes eq 'yes' ) ) {
+	if ((defined $yes) && ($yes eq 'yes')) {
 
 		# Remove this folder.
-		if ( ! $$k{imap}->folder_delete( $folder ) ) {
-			return( 'Error: ', $$k{imap}->error() );
+		if (! $$k{imap}->folder_delete($folder)) {
+			return('Error: ', $$k{imap}->error());
 		}
 
-		db_run( $$k{dbh}, 'update any roles this affects',
-				sql_update( 'wm_roles', 
-							'WHERE wm_user_id = '. sql_num( $$k{user_id} ).
-							'AND savesent = '. sql_str( $folder ),
+		db_run($$k{dbh}, 'update any roles this affects',
+				sql_update('wm_roles', 
+							'WHERE wm_user_id = '. sql_num($$k{user_id}).
+							'AND savesent = '. sql_str($folder),
+							'savesent' => sql_str('')));
 
-							'savesent' => sql_str( '' ) ) );
+		db_commit($$k{dbh});
 
-		db_commit( $$k{dbh} );
-
-		return( $k->_relocate( $r, $$k{rootp} ) );
+		return($k->_relocate($r, $$k{rootp}));
 	}
 	else {
 		# Check against master list.
-		for my $fldr ( 	$$k{imap_drafts}, $$k{imap_sent}, 
-						$$k{imap_trash}, $$k{imap_inbox} )
-		{
-			next if ( $fldr ne $folder );
+		for my $fldr ($$k{imap_drafts}, $$k{imap_sent}, 
+						$$k{imap_trash}, $$k{imap_inbox}) {
+			next if ($fldr ne $folder);
 
-			return( ht_form_js( "$$k{uri}/yes" ), 
-					ht_div( { 'class' => 'box' } ),
-					ht_table( {} ),
-					ht_tr(),
-						ht_td( {},
+			return(ht_form_js("$$k{uri}/yes"), 
+					ht_div({ 'class' => 'box' }),
+					ht_table(),
+					ht_tr(undef,
+						ht_td(undef,
 								qq!The '$folder' folder is required for !,
 								q!normal operation and may not !,
-								q!be removed.! 	),
-					ht_utr(),
-					ht_tr(),
-						ht_td( 	{ 'class' => 'rshd' }, 
-								ht_submit( 'cancel', 'Back' ) ),
-					ht_utr(),
+								q!be removed.!)),
+
+					ht_tr(undef,
+						ht_td({ 'class' => 'rshd' }, 
+								ht_submit('cancel', 'Back'))),
+
 					ht_utable(),
 					ht_udiv(),
-					ht_uform() );
+					ht_uform());
 		}
 
 		my $count = $$k{imap}->folder_nmsgs($folder);
 
-		return( ht_form_js( "$$k{uri}/yes" ), 
-				ht_div( { 'class' => 'box' } ),
-				ht_table( { } ),
-				ht_tr(),
-					ht_td( {}, 
+		return( ht_form_js("$$k{uri}/yes"), 
+				ht_div({ 'class' => 'box' }),
+				ht_table(),
+				ht_tr(undef,
+					ht_td(undef,
 							qq!Delete the folder "$folder" ? This will !,
 							q!completely remove this folder and all !,
-							qq! '$count' message(s) it contains.! ),
-				ht_utr(),
-				ht_tr(),
-					ht_td( { 'class' => 'rshd' }, 
-							ht_submit( 'submit', 'Continue with Delete' ),
-							ht_submit( 'cancel', 'Cancel' ) ),
-				ht_utr(),
+							qq! '$count' message(s) it contains.!)),
+
+				ht_tr(undef,
+					ht_td({ 'class' => 'rshd' }, 
+							ht_submit('submit', 'Continue with Delete'),
+							ht_submit('cancel', 'Cancel'))),
 				ht_utable(),
 				ht_udiv(),
-				ht_uform() );
+				ht_uform());
 	}
 } # END $k->do_delete
 
 #-------------------------------------------------
-# $k->do_edit( $r, $folder )
+# $k->do_edit($r, $folder)
 #-------------------------------------------------
 sub do_edit {
-	my ( $k, $r, $folder ) = @_;
+	my ($k, $r, $folder) = @_;
 
-	my $in 			= $k->param( Apache2::Request->new( $r ) );
+	my $in = $k->param(Apache2::Request->new($r));
 	$$k{page_title}	.= 'Rename Folder';
 
-	return( 'Unknown folder.' ) 				if ( ! is_text( $folder ) );
-	return( $k->_relocate( $r, $$k{rootp} ) ) 	if ( $in->{cancel} );
+	return('Unknown folder.') 				if (! is_text($folder));
+	return($k->_relocate($r, $$k{rootp})) 	if ($in->{cancel});
 		
 	$in->{folder_old} = $folder;
 
-	if ( my @err = $k->_checkvals( $in, 1 ) ) {
+	if (my @err = $k->_checkvals($in, 1)) {
 		$in->{folder} = $folder;
 
-		return( ( $r->method eq 'POST' ? @err : '' ), $k->_form( $in, 1 ) );
+		return(($r->method eq 'POST' ? @err : ''), $k->_form($in, 1));
 	}
 
-	db_run( $$k{dbh}, 'update any roles this affects',
-			sql_update( 'wm_roles', 
-							'WHERE wm_user_id = '. sql_num( $$k{user_id} ).
-							'AND savesent = '. sql_str( $folder ),
-						'savesent' => sql_str( $in->{folder} ) ) );
+	db_run($$k{dbh}, 'update any roles this affects',
+			sql_update('wm_roles', 
+							'WHERE wm_user_id = '. sql_num($$k{user_id}).
+							'AND savesent = '. sql_str($folder),
+						'savesent' => sql_str($in->{folder})));
 
 	# Rename the folder.
-	if ( ! $$k{imap}->folder_rename( $folder, $in->{folder} ) ) {
-		return( 'Error: ', $$k{imap}->error() );
+	if (! $$k{imap}->folder_rename($folder, $in->{folder})) {
+		return('Error: ', $$k{imap}->error());
 	}
 
-	db_commit( $$k{dbh} );
+	db_commit($$k{dbh});
 		
-	return( $k->_relocate( $r, $$k{rootp} ) );
+	return($k->_relocate($r, $$k{rootp}));
 } # END $k->do_edit
 
 #-------------------------------------------------
-# $k->do_main( $r )
+# $k->do_main($r)
 #-------------------------------------------------
 sub do_main {
-	my ( $k, $r ) = @_;
+	my ($k, $r) = @_;
 
 	$$k{page_title} .= 'Folders List';
 
 	my %folders = $$k{imap}->folder_list();	
-	my %no_edit	= ( $$k{imap_drafts}  	=> 1,
-					$$k{imap_sent} 		=> 1, 
-					$$k{imap_trash}  	=> 1,
-					$$k{imap_inbox}		=> 1 );
+	my %no_edit	= ($$k{imap_drafts} => 1,
+					$$k{imap_sent} 	=> 1, 
+					$$k{imap_trash} => 1,
+					$$k{imap_inbox}	=> 1);
 
-	my @lines 	= (	ht_div( { 'class' => 'box' } ),
-					ht_table( {} ),
+	my @lines 	= (ht_div({ 'class' => 'box' }),
+					ht_table(),
 
-					ht_tr(),
-						ht_td( 	{ 'class' => 'hdr' }, 'Folder' ),
-						ht_td( 	{ 'class' => 'hdr' }, 'Messages' ),
-						ht_td( 	{ 'class' => 'rhdr' },
-								'[',
-								ht_a( "$$k{rootp}/add", 'New Folder' ), 
-								']' ),
-					ht_utr() );
+					ht_tr(undef,
+						ht_td({ 'class' => 'hdr' }, 'Folder'),
+						ht_td({ 'class' => 'hdr' }, 'Messages'),
+						ht_td({ 'class' => 'rhdr' },
+							'[', ht_a("$$k{rootp}/add", 'New Folder'), ']')) );
 
 	# Show all of the current folders. ( and their message counts )
-	for my $folder ( sort 	{ ( $a eq $$k{imap_inbox} ) ? -1 : $a cmp $b }
-							( keys( %folders )  ) ) {
+	for my $folder (sort { ($a eq $$k{imap_inbox}) ? -1 : $a cmp $b }
+							(keys(%folders))) {
 
 		my $count = $$k{imap}->folder_nmsgs($folder);
 
-		push( @lines,	ht_tr(),
-						ht_td( {}, $k->inbox_mask( $folder ) ),
-						ht_td( {}, $count ),
-						ht_td( { 'class' => 'rdta' } ) );
+		push(@lines, ht_tr(),
+						ht_td(undef, $k->inbox_mask($folder)),
+						ht_td(undef, $count),
+						ht_td({ 'class' => 'rdta' }));
 
-		if ( ! defined $no_edit{$folder} ) {
-			push( @lines, 	'[', ht_a( "$$k{rootp}/edit/$folder", 'Rename' ),
-							'|', 
-							ht_a( "$$k{rootp}/delete/$folder", 'Delete' ), 
-							']', );
+		if (! defined $no_edit{$folder}) {
+			push(@lines,'[', ht_a("$$k{rootp}/edit/$folder", 'Rename'),
+						'|', ht_a("$$k{rootp}/delete/$folder", 'Delete'), ']');
 		}
 
-		push( @lines, 	ht_utd(),
-						ht_utr() );		
+		push(@lines, ht_utd(), ht_utr());		
 	}
 
-	return( @lines, ht_utable(), ht_udiv() );
+	return(@lines, ht_utable(), ht_udiv());
 } # END $k->do_main
 
 # EOF

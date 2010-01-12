@@ -25,11 +25,11 @@ sub _checkvals {
 
 	my @errors;
 
-	if (! is_text( $in->{username} ) ) {
+	if (! is_text($in->{username})) {
 		push(@errors, 'Please enter your user name.');
 	}
 
-	if (! is_text( $in->{password} ) ) {
+	if (! is_text($in->{password})) {
 		push(@errors, 'Please enter your password.');
 	}
 
@@ -37,8 +37,8 @@ sub _checkvals {
 		# Check the username and password ? against server.
 		my $imap = Alchemy::WebMail::IMAP->new( $$k{imap_host}, 
 							$$k{imap_proto}, $$k{imap_inbox},
-							lc( $in->{username} ), $in->{password},
-							$$k{file_tmp} );
+							lc($in->{username}), $in->{password},
+							$$k{file_tmp});
 
 		if (! $imap->alive()) {
 			push(@errors, 'Invalid username or password.');
@@ -69,13 +69,11 @@ sub _form {
 			ht_table( {} ),
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Username'),
-				ht_td({ 'class' => 'dta' },
-					ht_input('username', 'text', $in))),
+				ht_td(undef, ht_input('username', 'text', $in))),
 
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Password'),
-				ht_td({ 'class' => 'dta' }, 
-					ht_input('password', 'password', $in))),
+				ht_td(undef, ht_input('password', 'password', $in))),
 
 			ht_tr(undef,
 				ht_td({ 'colspan' => '2', 'class' => 'rshd' }, 

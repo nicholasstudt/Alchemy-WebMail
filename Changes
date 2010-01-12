@@ -2,9 +2,6 @@ Revision history for Perl extension Alchemy::WebMail.
 
 -[ Todo ]--------------------------------------------------------------
 
-	- Fix the Folder creation to no allow leading/trailing spaces, or
-	  make it so the system can use folders like that.
-
 	- Fix the address book to work in both a popup and in the full
 	  screen. Both should have the same features, but one should just
 	  have a different template.
@@ -18,9 +15,6 @@ Revision history for Perl extension Alchemy::WebMail.
 	- Exploit the Cyrus/SASL to do real folders.
 	- Build the default SQL creation scripts for Mysql and Oracle.
 
-	- Don't make a trash folder, simply show all things with a "Trash"
-	  flag set.
-
 Requested Features:
 	- Search mail.
 	- Display attachment icon in main mail listing.
@@ -32,7 +26,9 @@ Requested Features:
 1.0
 	- Converted from Mail::Cclient to Mail::IMAPClient.
 	- Fixed a bug that made HTML only mail display as plain text.
-
+	- Fixed the Folder creation to no allow leading/trailing spaces.
+	- Removed dta class from use.
+	- Set version to 1.0, 7 years to 1.0 is probably a bit long.
 
 0.77 Mon Dec 15 21:32:54 CST 2008
 	- Last working in AddressBook.

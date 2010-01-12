@@ -89,13 +89,13 @@ sub attachments_form {
 			ht_table(undef),
 
 			ht_tr(undef,
-				ht_td({ 'class' => 'dta' },
+				ht_td(undef, 
 					ht_input('newfile', 'file', $in),
 					ht_submit('attach', 'Attach'))),
 
 			# Select
 			ht_tr(undef,
-				ht_td({ 'class' => 'dta' },
+				ht_td(undef,
 					ht_select('attached', $size, $in, '', '', @files),
 					ht_submit('remove', 'Remove'))),
 
@@ -234,47 +234,47 @@ sub compose_form {
 			# From ( role )
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'From'),
-				ht_td({ 'class' => 'dta' }, 
+				ht_td(undef,
 					ht_select('role', 1, $in, '', '', @roles),
 					'[', ht_a('javascript:addsig()', 'Add Signature'), ']')),
 
 			# To
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'To'),
-				ht_td({ 'class' => 'dta' }, 
+				ht_td(undef,
 					ht_input('to', 'text', $in, 'size="45"'), 
 					ht_a('javascript:addrpop(\'to\')', $$k{addr_icon}))),
 
 			# CC
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Cc'),
-				ht_td({ 'class' => 'dta' }, 
+				ht_td(undef,
 					ht_input('cc', 'text', $in, 'size="45"'),
 					ht_a('javascript:addrpop(\'cc\')', $$k{addr_icon}))),
 
 			# BCC
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Bcc'),
-				ht_td({ 'class' => 'dta' }, 	
+				ht_td(undef,
 					ht_input('bcc', 'text', $in, 'size="45"'),
 					ht_a('javascript:addrpop(\'bcc\')', $$k{addr_icon}))),
 
 			# Subject
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Subject'),
-				ht_td({ 'class' => 'dta' },
+				ht_td(undef,
 					ht_input('subject', 'text', $in, 'size="50"'))),
 
 			# Attachments
 			ht_tr(undef,
 				ht_td({ 'class' => 'shd' }, 'Attachments'),
-				ht_td({ 'class' => 'dta' },
+				ht_td(undef,
 					(@files) ? @files : 'No attachments',
 					ht_submit('attach', 'Attachments'))),
 
 			# Text
 			ht_tr(undef,
-				ht_td({ colspan => 2, 'class' => 'dta' }, 
+				ht_td({ colspan => 2 }, 
 					'Message', ht_br(),
 					ht_input('message', 'textarea', $in, 
 								'cols="75" rows="20"'))),
@@ -491,8 +491,8 @@ sub do_delete {
 			ht_div({ 'class' => 'box' }),
 			ht_table(undef),
 			ht_tr(undef,
-				ht_td({ 'class' => 'dta' },
-						qq!Delete all messages from the "$folder" folder?!)),
+				ht_td(undef,
+					qq!Delete all messages from the "$folder" folder?!)),
 			ht_tr(undef,
 				ht_td({ 'class' => 'rshd' }, 
 					ht_submit('submit', 'Continue with Delete'),
@@ -701,14 +701,13 @@ sub do_main {
 		push(@lines, ht_tr(undef,
 						ht_td({ 'class' => 'shd' },
 								ht_checkbox("msg_$uid", 1, $in)),
-						ht_td({ 'class' => 'dta' }, $flag),
-						ht_td({ 'class' => 'dta' },
+						ht_td(undef, $flag),
+						ht_td(undef,
 							ht_a("$$k{rootp}/compose/$folder?to=$reply", 
 									$label)),
-						ht_td({ 'class' => 'dta' },
-								ht_a($sublink, ht_qt($header{Subject}))),
-						ht_td({ 'class' => 'dta' }, $header{Date}),
-						ht_td({ 'class' => 'dta' }, $size)));
+						ht_td(undef, ht_a($sublink, ht_qt($header{Subject}))),
+						ht_td(undef, $header{Date}),
+						ht_td(undef, $size)));
 	}
 
 	if (! @sorted) {
@@ -1030,31 +1029,30 @@ sub do_view {
 				
 					ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'From:'),
-						ht_td({ 'class' => 'dta' },
-								$k->address_links($from) )),
+						ht_td(undef, $k->address_links($from) )),
 
 					ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'To:'),
-						ht_td({ 'class' => 'dta' }, ht_qt($to))) );
+						ht_td(undef, ht_qt($to))) );
 
 	if (is_text($cc)) {
 		push(@lines, ht_tr(undef,
-							ht_td( { 'class' => 'shd' }, 'Cc:'),
-							ht_td( { 'class' => 'dta' }, ht_qt($cc))) );
+							ht_td({ 'class' => 'shd' }, 'Cc:'),
+							ht_td(undef,, ht_qt($cc))) );
 	}
 
 	push(@lines, 	ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'Subject:'),
-						ht_td({ 'class' => 'dta' }, ht_qt($subject))),
+						ht_td(undef, ht_qt($subject))),
 
 					ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'Date:'),
-						ht_td({ 'class' => 'dta' }, $date)) );
+						ht_td(undef, $date)) );
 
 	if (@files) {
 		push( @lines, 	ht_tr(undef,
 						ht_td({ 'class' => 'shd' }, 'Attachments:'),
-						ht_td({ 'class' => 'dta' }, join( ht_br(), @files ))) );
+						ht_td(undef, join(ht_br(), @files))) );
 	}
 
 	push(@lines, ht_utable(),
