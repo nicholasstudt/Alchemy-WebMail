@@ -405,7 +405,7 @@ sub message_delete {
 	
 	$self->{imap}->select($folder);
 
-	$self->{imap}->set_flag('Deleted', $uid);
+	$self->{imap}->delete_message($uid);
 
 	$self->{imap}->expunge();
 
@@ -658,7 +658,7 @@ sub message_sort {
 
 	$type 	= 'ALL' if (! defined $type);
 	$order 	= 1 	if (! defined $order);
-	$order 	= ($order) ? '' : 'REVERSE ';
+	$order 	= ($order) ? 'REVERSE ' : '';
 	
 	$self->{imap}->select($folder);
 
