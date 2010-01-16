@@ -1,17 +1,43 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Alchemy-WebMail
-version:      0.75
-version_from: lib/Alchemy/WebMail.pm
-installdirs:  site
+---
+name: Alchemy-WebMail
+version: 1.0
+author:
+  - 'Nicholas Studt <nicholas@photodwarf.org>'
+abstract: Web based e-mail application.
+license: perl
 requires:
-    Apache2::Request:              0
-    Crypt::CBC:                    0
-    Date::Manip:                   0
-    KrKit:                         0.14
-    Mail::Cclient:                 1.8
-    MIME::Entity:                  0
-    MIME::Parser:                  0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  Apache2::Request: 0
+  Crypt::CBC: 0
+  Date::Manip: 0
+  KrKit: 0.22
+  MIME::Entity: 0
+  MIME::Parser: 0
+  Mail::IMAPClient: 0
+generated_by: Module::Build version 0.280801
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
+provides:
+  Alchemy::WebMail:
+    file: lib/Alchemy/WebMail.pm
+    version: 1.0
+  Alchemy::WebMail::AddressBook:
+    file: lib/Alchemy/WebMail/AddressBook.pm
+  Alchemy::WebMail::AddressBook::Groups:
+    file: lib/Alchemy/WebMail/AddressBook/Groups.pm
+  Alchemy::WebMail::Authentication:
+    file: lib/Alchemy/WebMail/Authentication.pm
+  Alchemy::WebMail::Folders:
+    file: lib/Alchemy/WebMail/Folders.pm
+  Alchemy::WebMail::IMAP:
+    file: lib/Alchemy/WebMail/IMAP.pm
+  Alchemy::WebMail::Login:
+    file: lib/Alchemy/WebMail/Login.pm
+  Alchemy::WebMail::Mail:
+    file: lib/Alchemy/WebMail/Mail.pm
+  Alchemy::WebMail::Preferences:
+    file: lib/Alchemy/WebMail/Preferences.pm
+  Alchemy::WebMail::Preferences::Roles:
+    file: lib/Alchemy/WebMail/Preferences/Roles.pm
+resources:
+  license: http://dev.perl.org/licenses/

@@ -9,7 +9,6 @@ Revision history for Perl extension Alchemy::WebMail.
 
 	- Add an icon for attachments in the folder listing, how do I tell ?
 
-	- * Add help to the application. *
 	- Make the default templates prettier.
 	- Document install some more.
 	- Exploit the Cyrus/SASL to do real folders.
@@ -23,12 +22,12 @@ Requested Features:
 
 -[ Revision History ]--------------------------------------------------
 
-1.0
+1.0 Sat Jan 16 16:15:41 CST 2010
 	- Converted from Mail::Cclient to Mail::IMAPClient.
+	- Moved to Module::Build over ExtUtils::MakeMaker, goodbye make.
 	- Fixed a bug that made HTML only mail display as plain text.
 	- Fixed the Folder creation to no allow leading/trailing spaces.
-	- Removed dta class from use.
-	- Set version to 1.0, 7 years to 1.0 is probably a bit long.
+	- Removed dta css class from use.
 
 0.77 Mon Dec 15 21:32:54 CST 2008
 	- Last working in AddressBook.

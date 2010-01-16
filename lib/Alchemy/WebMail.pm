@@ -650,7 +650,7 @@ Nicholas Studt <nstudt@photodwarf.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2008 Nicholas Studt. All rights reserved.
+Copyright (c) 2003-2010 Nicholas Studt. All rights reserved.
 
 You may distribute under the terms of either the GNU General Public
 License or the Artistic License, as specified in the Perl README file.

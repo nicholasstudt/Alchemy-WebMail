@@ -1,5 +1,5 @@
-Alchemy/WebMail version 0.44
-============================
+Alchemy/WebMail version 1.0
+===========================
 
  Alchemy WebMail is a Web based mod_perl e-mail client. It relies on
  a database for storing user application data and an IMAP server for
@@ -10,15 +10,14 @@ Alchemy/WebMail version 0.44
 
 INSTALLATION
 
- Ensure that you have Apache 1.x and mod_perl 1.x, this module will not
- currently work with the 2.x series of Apache or mod_perl.
+ Ensure that you have Apache 2.x and mod_perl 2.x.
 
  To install this module type the following:
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+   perl Build.PL
+   ./Build
+   ./Build test
+   ./Build install
 
  Database Configuration:
 
@@ -47,21 +46,18 @@ DEPENDENCIES
 
  This module requires these other modules and libraries:
 
-	mod_perl 1.x 
+	mod_perl 2.x 
 
-	Magic
+	KrKit
 	Crypt::CBC
 		Crypt::Blowfish or another cipher that works with Crypt::CBC
-	Mail::Cclient
+	Mail::IMAPClient
 	MIME::Entity
 	MIME::Parser
 
-LAST UPDATED
- $Date: 2003/10/01 02:54:34 $
-
 COPYRIGHT AND LICENCE
 
- Copyright (c) 2003 Nicholas Studt. All rights reserved.
+ Copyright (c) 2003-2010 Nicholas Studt. All rights reserved.
 
  You may distribute under the terms of either the GNU General Public
  License or the Artistic License, as specified in the Perl README file.
