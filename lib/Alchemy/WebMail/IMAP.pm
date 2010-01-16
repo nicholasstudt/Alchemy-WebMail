@@ -405,7 +405,7 @@ sub message_delete {
 	
 	$self->{imap}->select($folder);
 
-	$self->{imap}->set_flag('Deleted', $uid);
+	$self->{imap}->delete_message($uid);
 
 	$self->{imap}->expunge();
 
@@ -658,7 +658,7 @@ sub message_sort {
 
 	$type 	= 'ALL' if (! defined $type);
 	$order 	= 1 	if (! defined $order);
-	$order 	= ($order) ? '' : 'REVERSE ';
+	$order 	= ($order) ? 'REVERSE ' : '';
 	
 	$self->{imap}->select($folder);
 
@@ -879,7 +879,7 @@ Nicholas Studt <nicholas@photodwarf.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2008 Nicholas Studt. All rights reserved.
+Copyright (c) 2003-2010 Nicholas Studt. All rights reserved.
 
 You may distribute under the terms of either the GNU General Public
 License or the Artistic License, as specified in the Perl README file.

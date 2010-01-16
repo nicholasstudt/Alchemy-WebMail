@@ -30,59 +30,58 @@ sub help () {
 } # END help
 
 #------------------------------------------------
-# purge_user( $opt, $username )
+# purge_user($opt, $username)
 #------------------------------------------------
 sub purge_user {
-	my ( $opt, $username ) = @_;
+	my ($opt, $username) = @_;
 
 	# Look up the username and get the id.
-	my $sth = db_query( $$opt{dbh}, 'Get the users id',
+	my $sth = db_query($$opt{dbh}, 'Get the users id',
 						'SELECT id FROM wm_users WHERE username = ', 
-						sql_str( $username ) );
+						sql_str($username));
 
-	my ( $uid ) = db_next( $sth );
+	my ($uid) = db_next($sth);
 
-	db_finish( $sth );
+	db_finish($sth);
 
-	if ( ! is_integer( $uid ) ) {
+	if (! is_integer($uid)) {
 		print "User '$username' not found, not removed.\n";
 		return();
 	}
 	
-	print "Remove user '$username' $uid.\n" if ( $$opt{verbose} );
+	print "Remove user '$username' $uid.\n" if ($$opt{verbose});
 
 	# Remove from wm_roles
-	db_run( $$opt{dbh}, 'Remove from wm_roles',
-			'DELETE FROM wm_roles WHERE wm_user_id = ', sql_num( $uid ) );
+	db_run($$opt{dbh}, 'Remove from wm_roles',
+			'DELETE FROM wm_roles WHERE wm_user_id = ', sql_num($uid));
 	
-	print "Removed user's roles.\n" if ( $$opt{verbose} );
+	print "Removed user's roles.\n" if ($$opt{verbose});
 
 	# Remove from wm_mlist_members
-	db_run( $$opt{dbh}, 'Remove from wm_mlist_members',
-			'DELETE FROM wm_mlist_members WHERE wm_user_id = ', 
-			sql_num( $uid ) );
+	db_run($$opt{dbh}, 'Remove from wm_mlist_members',
+			'DELETE FROM wm_mlist_members WHERE wm_user_id = ', sql_num($uid));
 	
-	print "Removed user's list members.\n" if ( $$opt{verbose} );
+	print "Removed user's list members.\n" if ($$opt{verbose});
 
 	# Remove from wm_mlist
-	db_run( $$opt{dbh}, 'Remove from wm_mlist',
-			'DELETE FROM wm_mlist WHERE wm_user_id = ', sql_num( $uid ) );
+	db_run($$opt{dbh}, 'Remove from wm_mlist',
+			'DELETE FROM wm_mlist WHERE wm_user_id = ', sql_num($uid));
 	
-	print "Removed user's list.\n" if ( $$opt{verbose} );
+	print "Removed user's list.\n" if ($$opt{verbose});
 
 	# Remove from wm_abook
-	db_run( $$opt{dbh}, 'Remove from wm_abook',
-			'DELETE FROM wm_abook WHERE wm_user_id = ', sql_num( $uid ) );
+	db_run($$opt{dbh}, 'Remove from wm_abook',
+			'DELETE FROM wm_abook WHERE wm_user_id = ', sql_num($uid));
 	
-	print "Removed user's address book.\n" if ( $$opt{verbose} );
+	print "Removed user's address book.\n" if ($$opt{verbose});
 
 	# Remove from wm_users
-	db_run( $$opt{dbh}, 'Remove from wm_users',
-			'DELETE FROM wm_users WHERE id = ', sql_num( $uid ) );
+	db_run($$opt{dbh}, 'Remove from wm_users',
+			'DELETE FROM wm_users WHERE id = ', sql_num($uid));
 	
 	db_commit( $$opt{dbh} );
 
-	print "User '$username' removed.\n" if ( $$opt{verbose} );
+	print "User '$username' removed.\n" if ($$opt{verbose});
 
 	return();
 } # END purge_user
@@ -98,29 +97,29 @@ eval {
 				'dbpass'	=> '',
 				'verbose'	=> 0, ); 
 	
-	GetOptions( 'help'			=> sub { help() },
+	GetOptions('help'			=> sub { help() },
 				'dbtype=s'		=> \$opt{dbtype},
 				'dbsrv=s'		=> \$opt{dbsrv},
 				'dbname=s'		=> \$opt{dbname},
 				'dbuser=s'		=> \$opt{dbuser},
 				'dbpass=s'		=> \$opt{dbpass}, 
-				'verbose+'		=> \$opt{verbose} );
+				'verbose+'		=> \$opt{verbose});
 
 	# Catch the no user time.
-	help() if ( ! @ARGV );
+	help() if (! @ARGV);
 
 	# Connect to the db.
-	$opt{dbh} = db_connect( $opt{dbtype}, $opt{dbuser}, $opt{dbpass}, 
-						 	$opt{dbsrv}, $opt{dbname}, 'off' );
+	$opt{dbh} = db_connect($opt{dbtype}, $opt{dbuser}, $opt{dbpass}, 
+						 	$opt{dbsrv}, $opt{dbname}, 'off');
 
-	for my $user ( @ARGV ) {
-		purge_user( \%opt, lc( $user ) );
+	for my $user (@ARGV) {
+		purge_user(\%opt, lc($user));
 	}
 
-	db_disconnect( $opt{dbh} );
+	db_disconnect($opt{dbh});
 };
 
-print "Error: $@\n\n" if ( $@ );
+print "Error: $@\n\n" if ($@);
 
 # EOF 
 1;
@@ -170,7 +169,7 @@ Nicholas Studt <nicholas@photodwarf.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2008 Nicholas Studt. All rights reserved.
+Copyright (c) 2003-2010 Nicholas Studt. All rights reserved.
 
 You may distribute under the terms of either the GNU General Public
 License or the Artistic License, as specified in the Perl README file.

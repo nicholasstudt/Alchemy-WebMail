@@ -1,10 +1,10 @@
-MANIFEST
-Changes
 bin/webmail_purgeuser.pl
+Build.PL
+Changes
+docs/httpd.conf
 docs/schema/WebMail.mysql.sql
 docs/schema/WebMail.oracle.sql
 docs/schema/WebMail.postgresql.sql
-docs/httpd.conf
 docs/templates/abook.png
 docs/templates/login.tp
 docs/templates/main.tp
@@ -13,11 +13,9 @@ docs/templates/popup.tp
 docs/templates/print.css
 docs/templates/replied.png
 docs/templates/screen.css
-META.yml
-Makefile.PL
-README
-lib/Alchemy/WebMail/AddressBook/Groups.pm
+lib/Alchemy/WebMail.pm
 lib/Alchemy/WebMail/AddressBook.pm
+lib/Alchemy/WebMail/AddressBook/Groups.pm
 lib/Alchemy/WebMail/Authentication.pm
 lib/Alchemy/WebMail/Folders.pm
 lib/Alchemy/WebMail/IMAP.pm
@@ -25,5 +23,7 @@ lib/Alchemy/WebMail/Login.pm
 lib/Alchemy/WebMail/Mail.pm
 lib/Alchemy/WebMail/Preferences.pm
 lib/Alchemy/WebMail/Preferences/Roles.pm
-lib/Alchemy/WebMail.pm
+MANIFEST
+META.yml
+README
 t/Alchemy-WebMail.t
