@@ -6,7 +6,7 @@ Alchemy/WebMail version 1.0
  managing the user's e-mail. 
 
  Alchemy Webmail should work with any database for which a DBI layer
- exists, the prefered database is PostgreSQL. 
+ exists, the preferred database is PostgreSQL. 
 
 INSTALLATION
 
@@ -55,7 +55,7 @@ DEPENDENCIES
 	MIME::Entity
 	MIME::Parser
 
-COPYRIGHT AND LICENCE
+COPYRIGHT AND LICENSE
 
  Copyright (c) 2003-2010 Nicholas Studt. All rights reserved.
 
