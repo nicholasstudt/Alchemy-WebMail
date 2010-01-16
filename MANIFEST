@@ -23,7 +23,6 @@ lib/Alchemy/WebMail/Login.pm
 lib/Alchemy/WebMail/Mail.pm
 lib/Alchemy/WebMail/Preferences.pm
 lib/Alchemy/WebMail/Preferences/Roles.pm
-Makefile.PL
 MANIFEST
 META.yml
 README
