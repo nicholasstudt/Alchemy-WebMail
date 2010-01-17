@@ -260,11 +260,27 @@ sub message_append {
 
 	my $date = strftime("%d-%b-%Y %H:%M:%S %z", localtime());
 
+    $self->{imap}->select($folder);
+	
+	my (%seen, $new);
+
+	for my $see ($self->{imap}->messages) {
+		$seen{$see} = 1;
+	}
+
 	# Save a message to a particular folder.
+	# Have to do the messages because $uid from this is unreliable.
 	my $uid = $self->{imap}->append_string($folder, $message->stringify, 
 											$flag, $date);
-	
-	return($uid);
+
+	for my $see ($self->{imap}->messages) {
+		if (! $seen{$see}) {
+			$new = $see;
+			last;
+		}
+	}
+
+	return($new);
 } # END $imap->message_append
 
 #-------------------------------------------------
