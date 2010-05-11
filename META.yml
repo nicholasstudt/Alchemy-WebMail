@@ -1,6 +1,6 @@
 ---
 name: Alchemy-WebMail
-version: 1.0
+version: 1.0.1
 author:
   - 'Nicholas Studt <nicholas@photodwarf.org>'
 abstract: Web based e-mail application.
@@ -23,7 +23,7 @@ meta-spec:
 provides:
   Alchemy::WebMail:
     file: lib/Alchemy/WebMail.pm
-    version: 1.0
+    version: 1.0.1
   Alchemy::WebMail::AddressBook:
     file: lib/Alchemy/WebMail/AddressBook.pm
   Alchemy::WebMail::AddressBook::Groups:

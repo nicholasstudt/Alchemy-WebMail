@@ -22,6 +22,10 @@ Requested Features:
 
 -[ Revision History ]--------------------------------------------------
 
+1.0.1 Mon May 10 21:25:28 CDT 2010
+	- Fixed the bug that allowed a blank subject to be displayed
+	  rendering it impossible to open the message from the list view.
+
 1.0 Sat Jan 16 16:15:41 CST 2010
 	- Converted from Mail::Cclient to Mail::IMAPClient.
 	- Moved to Module::Build over ExtUtils::MakeMaker, goodbye make.

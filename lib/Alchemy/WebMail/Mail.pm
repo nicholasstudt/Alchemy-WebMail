@@ -657,7 +657,7 @@ sub do_main {
 		# FIXME: Maybe everything should understand the new header hash...
 		$header{To} = $header{To}[0];
 		$header{From} = $header{From}[0];
-		$header{Subject} = $header{Subject}[0];
+		$header{Subject} = $header{Subject}[0] || 'No Subject';
 		$header{Date} = $header{Date}[0];
 
 		$header{To} 	= 'Unknown Recipient' 	if ( $header{To} =~ /^\s+$/ );
@@ -678,9 +678,9 @@ sub do_main {
 		# Clean up the date field.
 		$header{Date} 		=~ s/^...\,//; # Strip off the day
 		$header{Date}		= UnixDate($header{Date}, $$k{fmt_dt}) || '';
-		$header{Subject} 	= 'No Subject' 	if ( ! defined $header{Subject} );
-		$header{Subject} 	= 'No Subject' 	if ( $header{Subject} =~ /^\s+$/ );
-		$header{Subject} 	= $k->{imap}->decode_iso( $header{Subject} );
+		$header{Subject} 	= 'No Subject' 	if (! defined $header{Subject});
+		$header{Subject} 	= 'No Subject' 	if ($header{Subject} =~ /^\s+$/);
+		$header{Subject} 	= $k->{imap}->decode_iso($header{Subject});
 
 
 		# Subject Too long.
@@ -970,7 +970,7 @@ sub do_view {
 	# Headers to use.
 	my @files;
 
-	my $subject = $k->{imap}->decode_iso($$msg{head}->get( 'Subject' ) || '');
+	my $subject = $k->{imap}->decode_iso($$msg{head}->get( 'Subject' ) || 'No Subject');
 	my $from = $k->{imap}->decode_iso($$msg{head}->get('From') || '');
 	my $to = $k->{imap}->decode_iso($$msg{head}->get( 'To' ) || '');
 	my $cc = $k->{imap}->decode_iso($$msg{head}->get( 'Cc' ) || '');

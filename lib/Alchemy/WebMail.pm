@@ -10,7 +10,7 @@ use KrKit::HTML qw(:all);
 use KrKit::SQL;
 use KrKit::Validate;
 
-our $VERSION = '1.0';
+our $VERSION = '1.0.1';
 our @ISA = ('KrKit::Handler');
 
 ############################################################
