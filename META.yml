@@ -2,7 +2,7 @@
 name: Alchemy-WebMail
 version: 1.0.1
 author:
-  - 'Nicholas Studt <nicholas@photodwarf.org>'
+  - 'Nicholas Studt <nicholas@nicholasstudt.com>'
 abstract: Web based e-mail application.
 license: perl
 requires:

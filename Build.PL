@@ -5,7 +5,7 @@ use Module::Build;
 my $builder = Module::Build->new(
     module_name         => 'Alchemy::WebMail',
     license             => 'perl',
-    dist_author         => 'Nicholas Studt <nicholas@photodwarf.org>',
+    dist_author         => 'Nicholas Studt <nicholas@nicholasstudt.com>',
     dist_version_from   => 'lib/Alchemy/WebMail.pm',
     requires			=> {
 							'KrKit' 			=> '>= 0.22',

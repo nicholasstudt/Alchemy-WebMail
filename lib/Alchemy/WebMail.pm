@@ -646,7 +646,7 @@ that WebMail is able to address, beyond noting the possibility.
 
 =head1 AUTHOR
 
-Nicholas Studt <nstudt@photodwarf.org>
+Nicholas Studt <nicholas@nicholasstudt.com>
 
 =head1 COPYRIGHT
 
