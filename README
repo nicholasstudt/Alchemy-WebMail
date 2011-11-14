@@ -1,5 +1,5 @@
-Alchemy/WebMail version 1.0
-===========================
+Alchemy/WebMail version 1.0.1
+=============================
 
  Alchemy WebMail is a Web based mod_perl e-mail client. It relies on
  a database for storing user application data and an IMAP server for
